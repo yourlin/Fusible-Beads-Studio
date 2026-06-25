@@ -1,0 +1,92 @@
+/* 拼豆设计系统 — 全局样式与可复用图案
+ * 字体:正文用 Noto Sans SC(全 CJK,清晰),
+ * 标志/标题用 ZCOOL KuaiLe(站酷快乐体,圆润俏皮,呼应豆子糖果质感),克制使用。 */
+
+.v-application,
+body {
+  font-family: 'Noto Sans SC', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei',
+    'Segoe UI', sans-serif;
+}
+
+/* 品牌字体工具类:仅用于 wordmark 和 hero 大标题 */
+.font-brand {
+  font-family: 'ZCOOL KuaiLe', 'Noto Sans SC', system-ui, cursive;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* ── 信号色变量,供局部 CSS 引用(随主题切换由 Vuetify 提供 rgb 通道)── */
+:root {
+  --pd-bead-shadow: 0 1px 2px rgba(44, 42, 51, 0.18);
+}
+
+/* ── 拼豆板点阵背景:画布舞台底纹,呼应真实拼豆板的圆孔 ── */
+.pd-pegboard {
+  background-color: rgb(var(--v-theme-background));
+  background-image: radial-gradient(
+    rgba(var(--v-theme-on-surface), 0.06) 1.6px,
+    transparent 1.7px
+  );
+  background-size: 22px 22px;
+  background-position: 11px 11px;
+}
+
+/* ── 单颗豆子:圆形 + 中心孔高光,作为品牌签名元素 ── */
+.pd-bead {
+  position: relative;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.35),
+    var(--pd-bead-shadow);
+}
+.pd-bead::after {
+  content: '';
+  position: absolute;
+  inset: 32%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(44, 42, 51, 0.08);
+}
+
+/* 柔和卡片提升 hover 体验(仅在带 .pd-lift 的卡片上启用) */
+.pd-lift {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.pd-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* ── 透明背景棋盘格(主题感知),用于图片/预览底纹 ── */
+.pd-checker {
+  background-color: rgb(var(--v-theme-surface));
+  background-image:
+    linear-gradient(
+      45deg,
+      rgba(var(--v-theme-on-surface), 0.06) 25%,
+      transparent 25%,
+      transparent 75%,
+      rgba(var(--v-theme-on-surface), 0.06) 75%
+    ),
+    linear-gradient(
+      45deg,
+      rgba(var(--v-theme-on-surface), 0.06) 25%,
+      transparent 25%,
+      transparent 75%,
+      rgba(var(--v-theme-on-surface), 0.06) 75%
+    );
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+
+/* 让滚动条在面板里更克制 */
+.pd-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.pd-scroll::-webkit-scrollbar-thumb {
+  background: rgba(var(--v-theme-on-surface), 0.18);
+  border-radius: 8px;
+}
+.pd-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--v-theme-on-surface), 0.3);
+}

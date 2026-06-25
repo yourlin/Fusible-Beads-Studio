@@ -1,0 +1,33 @@
+{
+  "name": "pindou-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "拼豆设计图稿 Web 应用 - 浏览器本地图片转拼豆图稿、在线编辑、PNG/PDF 导出",
+  "type": "module",
+  "scripts": {
+    "dev:frontend": "pnpm --filter @pindou/frontend dev",
+    "build": "pnpm -r build",
+    "build:shared": "pnpm --filter @pindou/shared build",
+    "build:frontend": "pnpm --filter @pindou/frontend build",
+    "test": "pnpm -r test",
+    "test:shared": "pnpm --filter @pindou/shared test",
+    "test:frontend": "pnpm --filter @pindou/frontend test",
+    "synth": "pnpm --filter @pindou/infra synth",
+    "lint": "eslint . --ext .ts,.vue",
+    "format": "prettier --write \"packages/**/*.{ts,vue,json,md}\""
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.7.0",
+    "@typescript-eslint/parser": "^7.7.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-vue": "^9.25.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.5",
+    "vue-eslint-parser": "^9.4.2"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  }
+}
