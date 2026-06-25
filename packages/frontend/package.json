@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "og": "node scripts/generate-og.mjs"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",

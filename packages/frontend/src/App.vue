@@ -52,21 +52,14 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { setLocale } from '@/plugins/i18n';
+import { useSeo } from '@/composables/useSeo';
 
 const { t, locale } = useI18n();
 
-// 标签标题与 html lang 跟随当前语言;immediate 保证首次加载即生效。
-watch(
-  locale,
-  (value) => {
-    document.title = t('pageTitle');
-    document.documentElement.lang = value === 'zh' ? 'zh-CN' : 'en';
-  },
-  { immediate: true },
-);
+// 按路由与语言动态维护 SEO 元信息（title / description / og / canonical）。
+useSeo();
 
 function onLocale(value: unknown) {
   if (value === 'en' || value === 'zh') setLocale(value);

@@ -7,6 +7,14 @@ const STORAGE_KEY = 'pindou-locale';
 const en = {
   brand: 'Fusible Beads Studio',
   pageTitle: 'Fusible Beads Studio — Turn images into bead patterns',
+  seo: {
+    homeTitle: 'Fusible Beads Studio — Turn images into bead patterns',
+    homeDescription:
+      'Free online fusible bead (perler/hama) pattern maker. Upload any image and convert it to a bead pattern in your browser, edit bead by bead, then export a high-res PNG or a PDF with a material list. Runs locally — your data never leaves your device.',
+    studioTitle: 'Studio — Convert & edit your bead pattern | Fusible Beads Studio',
+    studioDescription:
+      'Upload an image and generate a fusible bead pattern in the browser. Brush, eraser, paint bucket and eyedropper let you adjust every bead, then export a high-res PNG or a PDF with bead numbers and a material list.',
+  },
   nav: { home: 'Home', studio: 'Studio', github: 'View source on GitHub' },
   home: {
     eyebrow: 'Runs locally · your data never leaves the device',
@@ -109,6 +117,14 @@ const en = {
 const zh: typeof en = {
   brand: '拼豆星球',
   pageTitle: '拼豆星球 — 把图片拼成豆图',
+  seo: {
+    homeTitle: '拼豆星球 — 把图片拼成豆图 | 在线拼豆图纸生成器',
+    homeDescription:
+      '免费在线拼豆（perler / hama / 漫漫豆）图纸生成器。上传任意图片，在浏览器里直接转换成拼豆图稿，逐颗调整珠子颜色，再导出高清 PNG 或带材料清单的 PDF。本地运行，数据不离开设备。',
+    studioTitle: '工作台 — 转换并编辑你的拼豆图 | 拼豆星球',
+    studioDescription:
+      '上传图片，在浏览器里生成拼豆图纸。画笔、橡皮、油漆桶、取色器逐颗微调珠子颜色，随时撤销重做，再导出高清 PNG 或带珠子编号与材料清单的 PDF。',
+  },
   nav: { home: '首页', studio: '工作台', github: '在 GitHub 查看源码' },
   home: {
     eyebrow: '本地运行 · 数据不离开设备',

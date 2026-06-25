@@ -8,11 +8,13 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: { seoKey: 'home' },
     },
     {
       path: '/studio',
       name: 'studio',
       component: () => import('@/views/StudioView.vue'),
+      meta: { seoKey: 'studio' },
     },
   ],
 });
