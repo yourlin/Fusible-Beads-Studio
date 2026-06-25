@@ -1,16 +1,17 @@
-# 拼豆设计图稿 Fusible Beads Studio
+# 拼豆星球 Fusible Beads Studio
 
 [English](./README.md) · **简体中文**
 
 把任意图片转换成拼豆（Perler / Hama / Artkal）图稿 —— 全程在浏览器里完成。
 上传图片，转换为珠子网格，逐颗微调，再导出高清 PNG 或可直接打印、带编号材料清单的 PDF。
 
-**在线体验：** https://yourlin.github.io/Fusible-Beads-Studio/
+[在线体验](https://yourlin.github.io/Fusible-Beads-Studio/)
 
 > 全程本地处理，图片不上传服务器。界面支持中英文切换（默认英文）。
 
 ## 功能特性
 
+- **支持的图片格式** —— PNG、JPG/JPEG、WebP、GIF、BMP 与 SVG（SVG 会在本地栅格化处理）。
 - **本地转换** —— `createImageBitmap` → 离屏 Canvas（最近邻、保持宽高比）→ 逐像素用
   **CIEDE2000** 颜色匹配最接近的珠子色。无任何网络请求。
 - **可选抖动** —— Floyd–Steinberg 误差扩散，让渐变过渡更平滑。

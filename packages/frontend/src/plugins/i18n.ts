@@ -5,7 +5,8 @@ export type LocaleCode = 'en' | 'zh';
 const STORAGE_KEY = 'pindou-locale';
 
 const en = {
-  brand: 'Pindou Studio',
+  brand: 'Fusible Beads Studio',
+  pageTitle: 'Fusible Beads Studio — Turn images into bead patterns',
   nav: { home: 'Home', studio: 'Studio' },
   home: {
     eyebrow: 'Runs locally · your data never leaves the device',
@@ -105,7 +106,8 @@ const en = {
 };
 
 const zh: typeof en = {
-  brand: '拼豆设计图稿',
+  brand: '拼豆星球',
+  pageTitle: '拼豆星球 — 把图片拼成豆图',
   nav: { home: '首页', studio: '工作台' },
   home: {
     eyebrow: '本地运行 · 数据不离开设备',

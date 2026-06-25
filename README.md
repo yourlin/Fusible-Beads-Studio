@@ -6,10 +6,11 @@ Turn any image into a fusible‑bead (Perler / Hama / Artkal) pattern — entire
 Upload a picture, convert it to a bead grid, fine‑tune each bead, then export a high‑res PNG or a
 print‑ready PDF with a numbered material list.
 
-**Live demo:** https://yourlin.github.io/Fusible-Beads-Studio/
+[Live demo](https://yourlin.github.io/Fusible-Beads-Studio/)
 
 ## Features
 
+- **Supported image formats** — PNG, JPG/JPEG, WebP, GIF, BMP, and SVG (SVG is rasterized locally).
 - **Local conversion** — `createImageBitmap` → offscreen Canvas (nearest‑neighbour, aspect‑preserving)
   → per‑pixel nearest color via **CIEDE2000** matching. No network requests.
 - **Optional dithering** — Floyd–Steinberg error diffusion for smoother gradients.
