@@ -148,7 +148,13 @@ export function useExport() {
       doc.save(timestampedName('pindou', 'pdf'));
       return true;
     } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e);
+      const msg = e instanceof Error ? e.message : String(e);
+      // 重新部署后旧的懒加载 chunk 会 404；提示用户刷新而非显示晦涩报错。
+      error.value = /dynamically imported module|Importing a module script failed|Failed to fetch/i.test(
+        msg,
+      )
+        ? t('exportCtl.moduleFailed')
+        : msg;
       return false;
     } finally {
       exportingPdf.value = false;

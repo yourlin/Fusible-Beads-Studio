@@ -101,6 +101,7 @@ const en = {
     noDesign: 'Nothing to export',
     tooLarge: 'Export resolution {w}×{h}px exceeds the {max}px limit, please reduce the cell size',
     pngFailed: 'PNG generation failed',
+    moduleFailed: 'A new version was just released. Please refresh the page and export again.',
   },
   palettePanel: { title: 'Palette' },
 };
@@ -202,6 +203,7 @@ const zh: typeof en = {
     noDesign: '没有可导出的图稿',
     tooLarge: '导出分辨率 {w}×{h}px 超过 {max}px 上限，请减小每格尺寸',
     pngFailed: 'PNG 生成失败',
+    moduleFailed: '检测到新版本，请刷新页面后再导出。',
   },
   palettePanel: { title: '色板' },
 };
