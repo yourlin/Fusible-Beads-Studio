@@ -16,7 +16,7 @@ export interface CellPos {
  */
 export function useEditor() {
   const store = useDesignStore();
-  const tool = ref<Tool>('brush');
+  const tool = ref<Tool>('pan');
   const selectedIndex = ref(0);
 
   const history = useHistory<CellChange>((changes) => {
