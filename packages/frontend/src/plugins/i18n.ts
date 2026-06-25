@@ -7,7 +7,7 @@ const STORAGE_KEY = 'pindou-locale';
 const en = {
   brand: 'Fusible Beads Studio',
   pageTitle: 'Fusible Beads Studio — Turn images into bead patterns',
-  nav: { home: 'Home', studio: 'Studio' },
+  nav: { home: 'Home', studio: 'Studio', github: 'View source on GitHub' },
   home: {
     eyebrow: 'Runs locally · your data never leaves the device',
     titleLine1: 'Turn any image',
@@ -15,7 +15,6 @@ const en = {
     lead: 'Upload an image, convert it to a bead pattern right in the browser, fine-tune each bead, then export a high-res PNG or a PDF with a material list.',
     start: 'Start designing',
     learn: 'See features',
-    github: 'View source on GitHub',
     sectionTitle: 'Three simple steps',
     f1Title: 'Local conversion',
     f1Desc: 'Powered by Canvas and CIEDE2000 color matching — the whole image is converted in your browser, no network needed.',
@@ -110,7 +109,7 @@ const en = {
 const zh: typeof en = {
   brand: '拼豆星球',
   pageTitle: '拼豆星球 — 把图片拼成豆图',
-  nav: { home: '首页', studio: '工作台' },
+  nav: { home: '首页', studio: '工作台', github: '在 GitHub 查看源码' },
   home: {
     eyebrow: '本地运行 · 数据不离开设备',
     titleLine1: '把任何图片',
@@ -118,7 +117,6 @@ const zh: typeof en = {
     lead: '上传图片，浏览器里直接转换成拼豆图稿，逐颗调整珠子颜色，再导出高清 PNG 或带材料清单的 PDF。',
     start: '开始设计',
     learn: '了解功能',
-    github: '在 GitHub 查看源码',
     sectionTitle: '三步搞定',
     f1Title: '本地转换',
     f1Desc: '基于 Canvas 与 CIEDE2000 颜色匹配，整张图在浏览器里完成转换，无需联网。',

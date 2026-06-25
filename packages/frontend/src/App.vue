@@ -32,6 +32,16 @@
           <v-btn value="en" size="small">EN</v-btn>
           <v-btn value="zh" size="small">中文</v-btn>
         </v-btn-toggle>
+        <v-btn
+          variant="text"
+          icon="mdi-github"
+          class="ml-2"
+          href="https://github.com/yourlin/Fusible-Beads-Studio"
+          target="_blank"
+          rel="noopener noreferrer"
+          :aria-label="t('nav.github')"
+          :title="t('nav.github')"
+        />
       </template>
     </v-app-bar>
 

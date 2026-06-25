@@ -26,17 +26,6 @@
               >
                 {{ t('home.learn') }}
               </v-btn>
-              <v-btn
-                size="large"
-                variant="text"
-                icon="mdi-github"
-                color="secondary"
-                href="https://github.com/yourlin/Fusible-Beads-Studio"
-                target="_blank"
-                rel="noopener noreferrer"
-                :aria-label="t('home.github')"
-                :title="t('home.github')"
-              />
             </div>
           </v-col>
 
