@@ -1,13 +1,12 @@
 # Fusible Beads Studio
 
+**English** · [简体中文](./README.zh-CN.md)
+
 Turn any image into a fusible‑bead (Perler / Hama / Artkal) pattern — entirely in your browser.
 Upload a picture, convert it to a bead grid, fine‑tune each bead, then export a high‑res PNG or a
 print‑ready PDF with a numbered material list.
 
 **Live demo:** https://yourlin.github.io/Fusible-Beads-Studio/
-
-> 把任意图片在浏览器里转换成拼豆图稿：上传图片 → 本地转换 → 逐颗编辑 → 导出 PNG / PDF。
-> 全程本地处理，图片不上传服务器。界面支持中英文切换（默认英文）。
 
 ## Features
 
