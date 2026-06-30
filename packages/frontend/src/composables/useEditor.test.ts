@@ -75,6 +75,43 @@ describe('useEditor', () => {
     expect(store.cellAt(0, 0)).toBe(0);
   });
 
+  it('brush size 3 paints a 3×3 area centered on the cursor (clipped to grid)', () => {
+    const store = seed();
+    const editor = useEditor();
+    editor.selectColor(2);
+    editor.setTool('brush');
+    editor.setBrushSize(3);
+
+    // 中心 (1,1)：3×3 覆盖整个上方 0 区域 + (2,*) 行
+    editor.onCellDown({ row: 1, col: 1 });
+    editor.endStroke();
+    expect(store.cellAt(0, 0)).toBe(2);
+    expect(store.cellAt(1, 1)).toBe(2);
+    expect(store.cellAt(2, 2)).toBe(2);
+
+    // 单次撤销回退整个笔刷
+    editor.undo();
+    expect(store.cellAt(0, 0)).toBe(0);
+    expect(store.cellAt(2, 2)).toBe(1);
+    expect(editor.canUndo.value).toBe(false);
+  });
+
+  it('brush size clips at grid corner (no out-of-bounds)', () => {
+    const store = seed();
+    const editor = useEditor();
+    editor.selectColor(2);
+    editor.setTool('brush');
+    editor.setBrushSize(3);
+
+    // 角落 (0,0)：3×3 仅覆盖网格内的 (0,0)(0,1)(1,0)(1,1)
+    editor.onCellDown({ row: 0, col: 0 });
+    editor.endStroke();
+    expect(store.cellAt(0, 0)).toBe(2);
+    expect(store.cellAt(0, 1)).toBe(2);
+    expect(store.cellAt(1, 1)).toBe(2);
+    expect(store.cellAt(0, 2)).toBe(0); // 超出半径，未改
+  });
+
   it('eyedropper selects the color under the cursor without editing', () => {
     seed();
     const editor = useEditor();

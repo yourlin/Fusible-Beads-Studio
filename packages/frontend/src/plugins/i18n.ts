@@ -58,6 +58,7 @@ const en = {
     pan: 'Pan (hand)',
     undo: 'Undo (Ctrl+Z)',
     redo: 'Redo (Ctrl+Shift+Z)',
+    brushSize: 'Brush size',
   },
   params: {
     boardSize: 'Board size',
@@ -162,6 +163,8 @@ const en = {
     needMissing: 'Need about {n} beads (none on hand)',
     substitute: 'Substitute with inventory',
     substituteSoon: 'Coming soon',
+    subWith: 'Substitute with',
+    subNone: 'No substitute available in your inventory',
     copyText: 'Copy as text',
     copied: 'Copied',
     // 替代预览
@@ -232,6 +235,7 @@ const zh: typeof en = {
     pan: '平移（抓手）',
     undo: '撤销 (Ctrl+Z)',
     redo: '重做 (Ctrl+Shift+Z)',
+    brushSize: '画笔大小',
   },
   params: {
     boardSize: '拼豆板尺寸',
@@ -335,6 +339,8 @@ const zh: typeof en = {
     needMissing: '需约 {n} 颗（一颗没有）',
     substitute: '用库存替代',
     substituteSoon: '即将可用',
+    subWith: '替代为',
+    subNone: '库存里没有可替代的色',
     copyText: '复制为文本',
     copied: '已复制',
     // 替代预览

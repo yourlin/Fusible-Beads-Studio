@@ -76,6 +76,8 @@ const props = defineProps<{
   numberFor?: Record<number, number>;
   /** 库存模式：缺色品牌索引集合，画布叠加暖橙+斜纹标记（FR-6）。 */
   missingIndices?: Set<number> | null;
+  /** 悬停高亮框边长（画笔/橡皮按笔刷大小显示 N×N 预览框），默认 1。 */
+  hoverSize?: number;
 }>();
 
 const emit = defineEmits<{
@@ -109,6 +111,7 @@ function getOptions(): RenderOptions | null {
     showNumbers: props.showNumbers ?? false,
     numberFor: props.numberFor,
     missingIndices: props.missingIndices ?? null,
+    hoverSize: props.hoverSize ?? 1,
   };
 }
 
@@ -377,6 +380,7 @@ watch(
     () => props.showNumbers,
     () => props.numberFor,
     () => props.missingIndices,
+    () => props.hoverSize,
   ],
   () => renderer.requestRender(),
 );

@@ -1,7 +1,7 @@
 <template>
   <v-card variant="flat" border rounded="xl" data-testid="inventory-panel">
     <v-card-title class="text-subtitle-1 d-flex align-center font-weight-bold">
-      <span class="pd-bead title-bead" />
+      <v-icon size="20" color="secondary" class="mr-2">mdi-basket-outline</v-icon>
       {{ t('invPanel.title') }}
     </v-card-title>
     <v-card-text>
@@ -33,20 +33,22 @@
 
       <!-- 库存模式开启后的内容 -->
       <template v-if="store.inventoryMode && store.hasInventory && analysis">
-        <!-- 三态灯（FR-10 / UX-DR1）：常驻状态 + 一句人话，点击展开缺口清单 -->
-        <v-chip
-          :color="lightColor"
-          variant="flat"
-          class="mt-3 light-chip"
-          :prepend-icon="lightIcon"
+        <!-- 三态灯（FR-10 / UX-DR1）：常驻状态 + 一句人话，点击展开缺口清单。
+             自绘状态条而非 VChip——文字可换行、适配窄面板，不溢出。 -->
+        <button
+          type="button"
+          class="verdict mt-3"
+          :class="`verdict--${verdict}`"
+          :disabled="!hasShortfall"
           data-testid="verdict-light"
           @click="expanded = !expanded"
         >
-          {{ lightText }}
-          <v-icon v-if="hasShortfall" size="small" class="ml-1">
+          <v-icon size="20" class="verdict__icon">{{ lightIcon }}</v-icon>
+          <span class="verdict__text">{{ lightText }}</span>
+          <v-icon v-if="hasShortfall" size="18" class="verdict__chevron">
             {{ expanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
           </v-icon>
-        </v-chip>
+        </button>
 
         <!-- 缺口清单（FR-11 / UX-DR6）：点击三态灯展开 -->
         <v-expand-transition>
@@ -81,6 +83,27 @@
                   </v-chip>
                 </div>
                 <div class="short-note text-caption text-medium-emphasis">{{ noteFor(item) }}</div>
+                <!-- 缺色行内联显示替代目标色：不点开预览也一眼可见（UX-DR8/UX-DR11） -->
+                <div v-if="item.kind === 'missing'" class="short-sub text-caption">
+                  <template v-if="subFor(item.index)">
+                    <span class="short-sub__label text-medium-emphasis">{{ t('invPanel.subWith') }}</span>
+                    <span
+                      class="pd-bead short-sub__swatch"
+                      :style="{ backgroundColor: hexOf(subFor(item.index)!.toIndex) }"
+                    />
+                    <span class="short-sub__name">{{ nameOf(subFor(item.index)!.toIndex) }}</span>
+                    <v-chip
+                      size="x-small"
+                      :color="impactColor(subFor(item.index)!.deltaE)"
+                      variant="flat"
+                      class="ml-1"
+                    >
+                      <v-icon start size="x-small">{{ impactIcon(subFor(item.index)!.deltaE) }}</v-icon>
+                      {{ impactLabel(subFor(item.index)!.deltaE) }}
+                    </v-chip>
+                  </template>
+                  <span v-else class="text-medium-emphasis">{{ t('invPanel.subNone') }}</span>
+                </div>
               </div>
               <!-- 缺色行的「用库存替代」入口（UX-DR11 / 占位决议）。
                    Epic 4 解禁前为可见但禁用的占位。 -->
@@ -117,7 +140,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { shortfallTone, type ShortfallItem } from '@pindou/shared';
+import {
+  classifyDeltaE,
+  shortfallTone,
+  type ShortfallItem,
+  type Substitution,
+  type VisualImpact,
+} from '@pindou/shared';
 import { useDesignStore } from '@/stores/design';
 
 const { t } = useI18n();
@@ -142,18 +171,7 @@ function onToggle(value: boolean | null) {
 }
 
 // ---- 三态灯（颜色 + 图标 + 一句人话，UX-DR1 / UX-DR8）----
-const lightColor = computed(() => {
-  switch (analysis.value?.verdict) {
-    case 'buildable':
-      return 'success';
-    case 'substitutable':
-      return 'warning';
-    case 'insufficient':
-      return 'error';
-    default:
-      return 'surface-variant';
-  }
-});
+const verdict = computed(() => analysis.value?.verdict ?? 'unavailable');
 const lightIcon = computed(() => {
   switch (analysis.value?.verdict) {
     case 'buildable':
@@ -198,6 +216,28 @@ function nameOf(index: number): string {
   return c.code ? `${c.name} · ${c.code}` : c.name;
 }
 
+// ---- 缺色行内联替代信息 ----
+const subByFrom = computed(() => {
+  const m = new Map<number, Substitution>();
+  for (const s of analysis.value?.substitutions ?? []) m.set(s.fromIndex, s);
+  return m;
+});
+function subFor(fromIndex: number): Substitution | undefined {
+  return subByFrom.value.get(fromIndex);
+}
+function impactLabel(deltaE: number): string {
+  const i: VisualImpact = classifyDeltaE(deltaE);
+  return i === 'low' ? t('invPanel.impactLow') : i === 'mid' ? t('invPanel.impactMid') : t('invPanel.impactHigh');
+}
+function impactColor(deltaE: number): string {
+  const i = classifyDeltaE(deltaE);
+  return i === 'low' ? 'success' : i === 'mid' ? 'warning' : 'error';
+}
+function impactIcon(deltaE: number): string {
+  const i = classifyDeltaE(deltaE);
+  return i === 'low' ? 'mdi-circle-small' : i === 'mid' ? 'mdi-alert-outline' : 'mdi-alert';
+}
+
 /**
  * 缺口每行的人话解读（FR-11 party-mode 决议：引擎算得出的事别让用户肉眼算）。
  * - 缺色：需约 N 颗（一颗没有）。
@@ -236,20 +276,50 @@ async function copyShortfall() {
 </script>
 
 <style scoped>
-.title-bead {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  background: rgb(var(--v-theme-secondary));
-  margin-right: 8px;
-}
-.light-chip {
+/* 三态灯：自绘状态条，文字可换行、不溢出（替代 VChip） */
+.verdict {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.35;
   cursor: pointer;
-  height: auto;
-  min-height: 32px;
+}
+.verdict:disabled {
+  cursor: default;
+}
+.verdict__icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+.verdict__text {
+  flex: 1 1 auto;
   white-space: normal;
-  padding-top: 6px;
-  padding-bottom: 6px;
+  word-break: break-word;
+}
+.verdict__chevron {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+.verdict--buildable {
+  background: rgb(var(--v-theme-success));
+}
+.verdict--substitutable {
+  background: rgb(var(--v-theme-warning));
+}
+.verdict--insufficient {
+  background: rgb(var(--v-theme-error));
+}
+.verdict--unavailable {
+  background: rgb(var(--v-theme-surface-variant));
+  color: rgb(var(--v-theme-on-surface));
 }
 .short-row {
   display: flex;
@@ -277,5 +347,25 @@ async function copyShortfall() {
 }
 .short-note {
   margin-top: 2px;
+}
+.short-sub {
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.short-sub__label {
+  margin-right: 2px;
+}
+.short-sub__swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  margin: 0 3px;
+}
+.short-sub__name {
+  font-weight: 600;
 }
 </style>

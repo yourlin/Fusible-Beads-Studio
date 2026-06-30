@@ -1,6 +1,7 @@
 import type { BeadGrid } from '@pindou/shared';
 import { visibleCellRange, type ViewportState } from './viewport';
 import { contrastColor } from './exportRender';
+import { brushOffsets } from './brush';
 
 export interface RenderOptions {
   grid: BeadGrid;
@@ -17,6 +18,8 @@ export interface RenderOptions {
   showGrid?: boolean;
   /** 悬停高亮格 */
   hover?: { col: number; row: number } | null;
+  /** 悬停高亮框的边长（格数）；画笔/橡皮按笔刷大小显示 N×N 预览框，默认 1。 */
+  hoverSize?: number;
   /** 是否在珠子上绘制颜色编号 */
   showNumbers?: boolean;
   /** 颜色索引 → 编号 */
@@ -31,6 +34,7 @@ export interface RenderOptions {
 const GRID_LINE = 'rgba(0,0,0,0.08)';
 const BOARD_LINE = 'rgba(0,0,0,0.45)';
 const HOVER_LINE = 'rgba(25,118,210,0.95)';
+const HOVER_FILL = 'rgba(25,118,210,0.18)';
 /** 缺色标记色：暖橙 accent（与 DESIGN.md 一致，刻意非红，区别于「数量不足」）。 */
 const MISSING_MARK = '#F2A03D';
 
@@ -142,13 +146,33 @@ export function renderBeadGrid(ctx: CanvasRenderingContext2D, opts: RenderOption
     }
   }
 
-  // 悬停高亮
+  // 悬停高亮：按笔刷大小显示**圆形**笔刷足迹（与实际绘制的圆形一致）
   if (opts.hover) {
     const { col, row } = opts.hover;
     if (col >= 0 && col < cols && row >= 0 && row < rows) {
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = HOVER_LINE;
-      ctx.strokeRect(col * scale + offsetX, row * scale + offsetY, scale, scale);
+      const size = Math.max(1, opts.hoverSize ?? 1);
+      if (size === 1) {
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = HOVER_LINE;
+        ctx.strokeRect(col * scale + offsetX, row * scale + offsetY, scale, scale);
+      } else {
+        // 高亮笔刷覆盖的每个格（淡填充），并描出圆形轮廓
+        const offs = brushOffsets(size);
+        ctx.fillStyle = HOVER_FILL;
+        for (const { dr, dc } of offs) {
+          const r = row + dr;
+          const c = col + dc;
+          if (r < 0 || c < 0 || r >= rows || c >= cols) continue;
+          ctx.fillRect(c * scale + offsetX, r * scale + offsetY, scale, scale);
+        }
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = HOVER_LINE;
+        ctx.beginPath();
+        const cx = (col + 0.5) * scale + offsetX;
+        const cy = (row + 0.5) * scale + offsetY;
+        ctx.arc(cx, cy, (size / 2) * scale, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
   }
 }

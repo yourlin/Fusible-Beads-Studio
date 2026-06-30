@@ -2,6 +2,7 @@ import { ref } from 'vue';
 import { useDesignStore, type CellChange } from '@/stores/design';
 import { useHistory } from '@/composables/useHistory';
 import { floodFill } from '@/utils/floodFill';
+import { brushOffsets } from '@/utils/brush';
 
 export type Tool = 'brush' | 'eraser' | 'bucket' | 'eyedropper' | 'pan';
 
@@ -18,6 +19,8 @@ export function useEditor() {
   const store = useDesignStore();
   const tool = ref<Tool>('pan');
   const selectedIndex = ref(0);
+  /** 画笔/橡皮的笔刷大小（边长，格数）。1 = 单格，3 = 3×3，依此类推。 */
+  const brushSize = ref(1);
 
   const history = useHistory<CellChange>((changes) => {
     store.applyCellChanges(changes);
@@ -41,16 +44,40 @@ export function useEditor() {
     }
   }
 
+  /**
+   * 以 (row,col) 为中心、按 brushSize 直径生成**圆形**笔刷覆盖的格集合（裁剪到网格内）。
+   * 判据：格子中心到光标格中心的距离 ≤ 半径。size=1 时退化为单格。
+   */
+  function brushCells(row: number, col: number): CellPos[] {
+    const grid = store.grid;
+    if (!grid) return [];
+    const rows = grid.length;
+    const cols = grid[0]?.length ?? 0;
+    const cells = brushOffsets(brushSize.value);
+    const out: CellPos[] = [];
+    for (const { dr, dc } of cells) {
+      const r = row + dr;
+      const c = col + dc;
+      if (r >= 0 && c >= 0 && r < rows && c < cols) out.push({ row: r, col: c });
+    }
+    return out;
+  }
+
   function applyToolAt(pos: CellPos) {
     if (!store.grid) return;
     const { row, col } = pos;
     switch (tool.value) {
       case 'brush':
-        paint([{ row, col, index: selectedIndex.value }]);
+        paint(brushCells(row, col).map((p) => ({ row: p.row, col: p.col, index: selectedIndex.value })));
         break;
       case 'eraser': {
-        const orig = store.originalGrid?.[row]?.[col] ?? -1;
-        paint([{ row, col, index: orig }]);
+        paint(
+          brushCells(row, col).map((p) => ({
+            row: p.row,
+            col: p.col,
+            index: store.originalGrid?.[p.row]?.[p.col] ?? -1,
+          })),
+        );
         break;
       }
       case 'bucket': {
@@ -136,10 +163,16 @@ export function useEditor() {
     selectedIndex.value = index;
   }
 
+  function setBrushSize(size: number) {
+    brushSize.value = Math.max(1, Math.floor(size));
+  }
+
   return {
     tool,
     selectedIndex,
+    brushSize,
     setTool,
+    setBrushSize,
     selectColor,
     onCellDown,
     onCellDrag,

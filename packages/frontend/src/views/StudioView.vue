@@ -4,9 +4,11 @@
     <ToolRail
       v-if="store.hasDesign"
       :tool="editor.tool.value"
+      :brush-size="editor.brushSize.value"
       :can-undo="editor.canUndo.value"
       :can-redo="editor.canRedo.value"
       @update:tool="editor.setTool($event)"
+      @update:brush-size="editor.setBrushSize($event)"
       @undo="editor.undo()"
       @redo="editor.redo()"
     />
@@ -77,6 +79,7 @@
           :show-numbers="showNumbers"
           :number-for="store.numberFor"
           :missing-indices="missingIndices"
+          :hover-size="hoverSize"
           :pan-mode="editor.tool.value === 'pan'"
           class="viewer"
           @cell-pointerdown="editor.onCellDown($event)"
@@ -165,6 +168,11 @@ const editor = useEditor();
 const importOpen = ref(false);
 const showNumbers = ref(true);
 const totalBeads = computed(() => store.counts.reduce((s, c) => s + c.count, 0));
+
+/** 悬停预览框大小：仅画笔/橡皮按笔刷大小显示，其余工具为单格。 */
+const hoverSize = computed(() =>
+  editor.tool.value === 'brush' || editor.tool.value === 'eraser' ? editor.brushSize.value : 1,
+);
 
 /** 库存模式下的缺色品牌索引集合，供画布叠加标记（FR-6）。 */
 const missingIndices = computed<Set<number> | null>(() => {

@@ -2,8 +2,8 @@
   <div class="inventory pd-scroll">
     <header class="inventory__head">
       <div>
-        <h1 class="text-h5 font-weight-bold mb-1">
-          <span class="pd-bead title-bead" />
+        <h1 class="text-h5 font-weight-bold mb-1 d-flex align-center">
+          <v-icon size="24" color="primary" class="mr-2">mdi-basket-outline</v-icon>
           {{ t('inventory.title') }}
         </h1>
         <p class="text-body-2 text-medium-emphasis mb-0">{{ t('inventory.subtitle') }}</p>
@@ -99,9 +99,11 @@
               :model-value="qtyOf(c.id)"
               type="number"
               :disabled="!isOwned(c.id)"
-              :label="t('inventory.quantity')"
+              :placeholder="t('inventory.quantity')"
+              :aria-label="`${t('inventory.quantity')} ${c.name}`"
               :error-messages="errorFor(c.id)"
               density="compact"
+              variant="outlined"
               hide-details="auto"
               min="0"
               class="row__qty"
@@ -246,7 +248,7 @@ function confirmReset() {
 
 <style scoped>
 .inventory {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 24px 18px 48px;
   height: calc(100vh - 56px);
@@ -259,28 +261,24 @@ function confirmReset() {
   gap: 16px;
   margin-bottom: 20px;
 }
-.title-bead {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  background: rgb(var(--v-theme-primary));
-  margin-right: 8px;
-  vertical-align: middle;
-}
+/* 多列网格：每个单元自带 勾选+色块+名称+数量，避免单列时数量与颜色相隔太远 */
 .rows {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 6px 16px;
 }
 .row {
   display: grid;
-  grid-template-columns: 40px 24px 1fr 140px;
+  grid-template-columns: 32px 22px 1fr 92px;
   align-items: center;
-  gap: 12px;
-  padding: 4px 2px;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+  gap: 8px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
 }
 .row--owned {
-  background: rgba(var(--v-theme-primary), 0.04);
+  background: rgba(var(--v-theme-primary), 0.05);
+  border-color: rgba(var(--v-theme-primary), 0.15);
 }
 .row__swatch {
   width: 20px;
@@ -288,9 +286,12 @@ function confirmReset() {
   border-radius: 4px;
 }
 .row__name {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .row__qty {
-  max-width: 140px;
+  width: 92px;
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <v-card variant="flat" border rounded="xl">
     <v-card-title class="text-subtitle-1 d-flex align-center font-weight-bold">
-      <span class="pd-bead title-bead" />
+      <v-icon size="20" color="primary" class="mr-2">mdi-palette-outline</v-icon>
       {{ t('palettePanel.title') }}
       <v-spacer />
       <span class="text-caption text-medium-emphasis">{{ selected?.name }}</span>
@@ -55,12 +55,6 @@ function textColor(hex: string): string {
 </script>
 
 <style scoped>
-.title-bead {
-  width: 16px;
-  height: 16px;
-  background: rgb(var(--v-theme-primary));
-  margin-right: 8px;
-}
 .swatches {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
