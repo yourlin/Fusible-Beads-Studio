@@ -108,7 +108,12 @@
 
     <!-- 右侧调色板 -->
     <aside v-if="store.hasDesign" class="panels pd-scroll" :style="{ width: panelWidth + 'px', flexBasis: panelWidth + 'px' }">
-      <InventoryPanel class="mb-3" @rematch="onRematch" />
+      <InventoryPanel
+        class="mb-3"
+        :substitute-enabled="true"
+        @rematch="onRematch"
+        @substitute="openSubstitute"
+      />
       <PalettePanel
         :colors="store.palette.colors"
         :model-value="editor.selectedIndex.value"
@@ -125,6 +130,15 @@
       @clear="onClear"
       @generate="onGenerate"
     />
+
+    <!-- 感知替代预览（FR-9） -->
+    <SubstitutionPreview
+      v-model="substituteOpen"
+      :grid="store.grid"
+      :colors="store.palette.colors"
+      :substitutions="substitutions"
+      @apply="applySubstitutions"
+    />
   </div>
 </template>
 
@@ -134,13 +148,14 @@ import { useI18n } from 'vue-i18n';
 import BeadCanvas from '@/components/BeadCanvas.vue';
 import PalettePanel from '@/components/PalettePanel.vue';
 import InventoryPanel from '@/components/InventoryPanel.vue';
+import SubstitutionPreview from '@/components/SubstitutionPreview.vue';
 import ToolRail from '@/components/ToolRail.vue';
 import ExportControls from '@/components/ExportControls.vue';
 import ImportDialog from '@/components/ImportDialog.vue';
 import { useDesignStore } from '@/stores/design';
 import { useImageConverter } from '@/composables/useImageConverter';
 import { useEditor } from '@/composables/useEditor';
-import { rematchToInventory } from '@pindou/shared';
+import { rematchToInventory, applySubstitutions as applySubs, type Substitution } from '@pindou/shared';
 
 const { t } = useI18n();
 const store = useDesignStore();
@@ -167,6 +182,23 @@ function onRematch() {
   if (!store.grid) return;
   const next = rematchToInventory(store.grid, store.palette, store.currentInventory);
   editor.applyFullGrid(next);
+}
+
+// ---- 感知替代（FR-7/8/9）----
+const substituteOpen = ref(false);
+const substitutions = computed<Substitution[]>(() => store.inventoryAnalysis?.substitutions ?? []);
+
+function openSubstitute() {
+  if (substitutions.value.length === 0) return;
+  substituteOpen.value = true;
+}
+
+/** 应用感知替代：整色替换写回，记为单条历史（AD-9），随后即时刷新判定。 */
+function applySubstitutions() {
+  if (!store.grid || substitutions.value.length === 0) return;
+  const next = applySubs(store.grid, substitutions.value);
+  editor.applyFullGrid(next);
+  substituteOpen.value = false;
 }
 
 function openImport() {
