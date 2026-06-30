@@ -76,6 +76,7 @@
           :show-grid="true"
           :show-numbers="showNumbers"
           :number-for="store.numberFor"
+          :missing-indices="missingIndices"
           :pan-mode="editor.tool.value === 'pan'"
           class="viewer"
           @cell-pointerdown="editor.onCellDown($event)"
@@ -107,6 +108,7 @@
 
     <!-- 右侧调色板 -->
     <aside v-if="store.hasDesign" class="panels pd-scroll" :style="{ width: panelWidth + 'px', flexBasis: panelWidth + 'px' }">
+      <InventoryPanel class="mb-3" @rematch="onRematch" />
       <PalettePanel
         :colors="store.palette.colors"
         :model-value="editor.selectedIndex.value"
@@ -131,12 +133,14 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BeadCanvas from '@/components/BeadCanvas.vue';
 import PalettePanel from '@/components/PalettePanel.vue';
+import InventoryPanel from '@/components/InventoryPanel.vue';
 import ToolRail from '@/components/ToolRail.vue';
 import ExportControls from '@/components/ExportControls.vue';
 import ImportDialog from '@/components/ImportDialog.vue';
 import { useDesignStore } from '@/stores/design';
 import { useImageConverter } from '@/composables/useImageConverter';
 import { useEditor } from '@/composables/useEditor';
+import { rematchToInventory } from '@pindou/shared';
 
 const { t } = useI18n();
 const store = useDesignStore();
@@ -146,6 +150,24 @@ const editor = useEditor();
 const importOpen = ref(false);
 const showNumbers = ref(true);
 const totalBeads = computed(() => store.counts.reduce((s, c) => s + c.count, 0));
+
+/** 库存模式下的缺色品牌索引集合，供画布叠加标记（FR-6）。 */
+const missingIndices = computed<Set<number> | null>(() => {
+  const analysis = store.inventoryAnalysis;
+  if (!analysis) return null;
+  const s = new Set<number>();
+  for (const [k, v] of Object.entries(analysis.perColorStatus)) {
+    if (v === 'missing') s.add(Number(k));
+  }
+  return s;
+});
+
+/** 以库存色板重匹配当前图纸（FR-5），记为单条历史（AD-9）。 */
+function onRematch() {
+  if (!store.grid) return;
+  const next = rematchToInventory(store.grid, store.palette, store.currentInventory);
+  editor.applyFullGrid(next);
+}
 
 function openImport() {
   importOpen.value = true;

@@ -114,3 +114,71 @@ export interface Inventory {
   /** 库存条目集合 */
   entries: InventoryEntry[];
 }
+
+/**
+ * 库存色板掩码（InventoryMask）：拥有数量 > 0 的**品牌色板索引**集合。
+ * 与 grid 同索引空间（架构 AD-1）；不是独立 Palette。
+ */
+export type InventoryMask = Set<number>;
+
+/** 单个品牌索引相对当前库存的状态。 */
+export type PerColorStatus = 'ok' | 'insufficient' | 'missing';
+
+/**
+ * 可拼性判定（Buildability Verdict）三态 + 空态：
+ * - `buildable` 绿·可拼：无缺色且无数量不足。
+ * - `substitutable` 黄·替代后无缺色：存在缺色，但全部缺色都能在库存色板找到替代（不承诺数量精算到颗）。
+ * - `insufficient` 红·数量不足：无缺色，但存在数量不足色。
+ * - `unavailable` 不可用：库存/掩码为空，引导去录入（空态契约）。
+ */
+export type BuildabilityVerdict = 'buildable' | 'substitutable' | 'insufficient' | 'unavailable';
+
+/** 缺口项（Shortfall Item）：缺色或数量不足色的明细。双带 colorId + index（架构 AD-5）。 */
+export interface ShortfallItem {
+  /** 品牌色板内稳定 id */
+  colorId: string;
+  /** 品牌色板索引（与 grid 同空间） */
+  index: number;
+  /** 缺色 missing / 数量不足 insufficient */
+  kind: 'missing' | 'insufficient';
+  /**
+   * 差额数量：
+   * - missing：该缺色在图纸中的需求量（你需要这么多，但一颗没有）。
+   * - insufficient：需求量 − 拥有量（还差这么多）。
+   */
+  deficit: number;
+  /** 需求量（图纸中该色用量），用于人话解读「需求 vs 拥有」。 */
+  required: number;
+  /** 拥有量（库存中该色数量；missing 恒为 0）。 */
+  owned: number;
+}
+
+/**
+ * 感知替代（Perceptual Substitution）：把某缺色整色替换为库存色板内 ΔE 最小的颜色。
+ * 方向明确：from = 缺色品牌索引 → to = 库存内品牌索引。
+ */
+export interface Substitution {
+  fromIndex: number;
+  toIndex: number;
+  /** CIEDE2000 色差（越小越接近） */
+  deltaE: number;
+  /** 受影响格子数（该缺色在图纸中的格数） */
+  affectedCells: number;
+}
+
+/**
+ * 库存分析结果（InventoryAnalysis）：`analyzeInventory` 的单一派生源输出（架构 AD-5）。
+ * 一次算出全部派生结论，所有下游读此唯一出口，不各自重算。
+ */
+export interface InventoryAnalysis {
+  /** 库存色板掩码（品牌索引集合） */
+  mask: InventoryMask;
+  /** 品牌索引 → 状态（仅含图纸用到的索引） */
+  perColorStatus: Record<number, PerColorStatus>;
+  /** 三态 + 空态判定 */
+  verdict: BuildabilityVerdict;
+  /** 缺口清单（缺色 + 数量不足） */
+  shortfall: ShortfallItem[];
+  /** 缺色的感知替代建议 */
+  substitutions: Substitution[];
+}

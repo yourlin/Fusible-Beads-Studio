@@ -12,8 +12,10 @@ import {
   type ConvertOptions,
   type ConvertResult,
   type Inventory,
+  type InventoryAnalysis,
   type InventoryEntry,
   type Palette,
+  analyzeInventory,
 } from '@pindou/shared';
 import { loadInventory, saveInventory, clearInventory } from '@/services/inventoryRepo';
 
@@ -42,6 +44,8 @@ interface DesignState {
    * 未加载过的 palette 不在此 map（懒加载）。
    */
   inventories: Record<string, Inventory>;
+  /** 库存模式开关（架构 AD-7）：默认关闭，关闭时与基线零回归。 */
+  inventoryMode: boolean;
 }
 
 function cloneGrid(grid: BeadGrid): BeadGrid {
@@ -71,6 +75,7 @@ export const useDesignStore = defineStore('design', {
     originalGrid: null,
     countMap: {},
     inventories: {},
+    inventoryMode: false,
   }),
 
   getters: {
@@ -156,6 +161,22 @@ export const useDesignStore = defineStore('design', {
     /** 当前品牌色板是否已有非空库存（至少一条 qty > 0）。 */
     hasInventory(): boolean {
       return this.inventoryColorCount > 0;
+    },
+    /**
+     * 库存分析单一派生源（架构 AD-5）——所有库存派生 UI 的唯一出口。
+     * 仅在库存模式开启且有图纸时计算；否则返回 null（关闭时零参与，AD-7）。
+     * 依赖 grid + countMap（编辑即时刷新）+ inventory + inventoryMode。
+     */
+    inventoryAnalysis(state): InventoryAnalysis | null {
+      if (!state.inventoryMode || !state.grid) return null;
+      // 读取 countMap 以建立对逐格编辑的响应依赖（applyCellChanges 增量维护）。
+      void state.countMap;
+      const palette = getPalette(state.paletteId) ?? DEFAULT_PALETTE;
+      const inventory = state.inventories[state.paletteId] ?? {
+        paletteId: state.paletteId,
+        entries: [],
+      };
+      return analyzeInventory(state.grid, palette, inventory);
     },
   },
 
@@ -284,6 +305,20 @@ export const useDesignStore = defineStore('design', {
       const pid = paletteId ?? this.paletteId;
       clearInventory(pid);
       this.inventories[pid] = { paletteId: pid, entries: [] };
+    },
+    /**
+     * 开关库存模式（架构 AD-7）。开启前确保当前色板库存已加载；
+     * 库存为空时拒绝开启（由 UI 禁用开关并引导录入，这里做兜底）。
+     */
+    setInventoryMode(on: boolean) {
+      if (on) {
+        this.ensureInventoryLoaded();
+        if (!this.hasInventory) {
+          this.inventoryMode = false;
+          return;
+        }
+      }
+      this.inventoryMode = on;
     },
     /** 清空当前设计（保留参数设置）。 */
     clearDesign() {

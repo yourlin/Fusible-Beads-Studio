@@ -104,6 +104,30 @@ export function useEditor() {
     redoMap = new Map();
   }
 
+  /**
+   * 以一张新网格整体替换当前网格，并记为**单条**撤销历史（架构 AD-9）。
+   * 用于库存模式的「以库存色板重匹配」(FR-5) 与「应用感知替代」(FR-8)——
+   * 二者都是整图级写回，但不得裸调 commitConversion（会丢历史且重置 originalGrid）。
+   * 通过 diff → applyCellChanges 实现，保持三不变量与可整体回退。
+   */
+  function applyFullGrid(nextGrid: number[][]) {
+    const grid = store.grid;
+    if (!grid) return;
+    const changes: CellChange[] = [];
+    for (let row = 0; row < nextGrid.length; row++) {
+      const nr = nextGrid[row];
+      const cr = grid[row];
+      if (!nr || !cr) continue;
+      for (let col = 0; col < nr.length; col++) {
+        if (nr[col] !== cr[col]) changes.push({ row, col, index: nr[col] });
+      }
+    }
+    if (changes.length === 0) return;
+    // 已逐格 diff，故每条变更都会真正应用，inverse 与 changes 一一对应。
+    const inverse = store.applyCellChanges(changes);
+    history.record({ redo: changes, undo: inverse });
+  }
+
   function setTool(t: Tool) {
     tool.value = t;
   }
@@ -120,6 +144,7 @@ export function useEditor() {
     onCellDown,
     onCellDrag,
     endStroke,
+    applyFullGrid,
     undo: history.undo,
     redo: history.redo,
     canUndo: history.canUndo,

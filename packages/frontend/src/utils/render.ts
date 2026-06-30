@@ -21,11 +21,18 @@ export interface RenderOptions {
   showNumbers?: boolean;
   /** 颜色索引 → 编号 */
   numberFor?: Record<number, number>;
+  /**
+   * 库存模式：缺色的品牌索引集合（FR-6）。这些格子叠加暖橙描边 + 斜纹双编码标记。
+   * 仅在库存模式开启时传入；为空/未传则不标记（关闭模式零参与）。
+   */
+  missingIndices?: Set<number> | null;
 }
 
 const GRID_LINE = 'rgba(0,0,0,0.08)';
 const BOARD_LINE = 'rgba(0,0,0,0.45)';
 const HOVER_LINE = 'rgba(25,118,210,0.95)';
+/** 缺色标记色：暖橙 accent（与 DESIGN.md 一致，刻意非红，区别于「数量不足」）。 */
+const MISSING_MARK = '#F2A03D';
 
 /**
  * 在 2D 上下文上渲染拼豆网格：圆形珠子 + 网格线 + 多板分割线 + 悬停高亮。
@@ -75,6 +82,40 @@ export function renderBeadGrid(ctx: CanvasRenderingContext2D, opts: RenderOption
       ctx.lineTo((range.maxCol + 1) * scale + offsetX, y);
     }
     ctx.stroke();
+  }
+
+  // 缺色标记（库存模式 FR-6）：暖橙描边 + 斜纹纹理双编码（色盲可辨）
+  const missing = opts.missingIndices;
+  if (missing && missing.size > 0) {
+    for (let row = range.minRow; row <= range.maxRow; row++) {
+      const gridRow = grid[row];
+      for (let col = range.minCol; col <= range.maxCol; col++) {
+        const idx = gridRow[col];
+        if (idx < 0 || !missing.has(idx)) continue;
+        const x0 = col * scale + offsetX;
+        const y0 = row * scale + offsetY;
+        // 斜纹纹理（在格内裁剪后画几条对角线）
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x0, y0, scale, scale);
+        ctx.clip();
+        ctx.strokeStyle = MISSING_MARK;
+        ctx.globalAlpha = 0.85;
+        ctx.lineWidth = Math.max(1, scale * 0.08);
+        const step = Math.max(3, scale * 0.28);
+        ctx.beginPath();
+        for (let d = -scale; d < scale * 2; d += step) {
+          ctx.moveTo(x0 + d, y0);
+          ctx.lineTo(x0 + d + scale, y0 + scale);
+        }
+        ctx.stroke();
+        ctx.restore();
+        // 暖橙描边
+        ctx.lineWidth = Math.max(1.5, scale * 0.12);
+        ctx.strokeStyle = MISSING_MARK;
+        ctx.strokeRect(x0 + 1, y0 + 1, scale - 2, scale - 2);
+      }
+    }
   }
 
   // 多板分割线

@@ -74,6 +74,8 @@ const props = defineProps<{
   panMode?: boolean;
   showNumbers?: boolean;
   numberFor?: Record<number, number>;
+  /** 库存模式：缺色品牌索引集合，画布叠加暖橙+斜纹标记（FR-6）。 */
+  missingIndices?: Set<number> | null;
 }>();
 
 const emit = defineEmits<{
@@ -106,6 +108,7 @@ function getOptions(): RenderOptions | null {
     hover: hover.value,
     showNumbers: props.showNumbers ?? false,
     numberFor: props.numberFor,
+    missingIndices: props.missingIndices ?? null,
   };
 }
 
@@ -367,8 +370,15 @@ watch(
     renderer.requestRender();
   },
 );
-watch([() => props.colors, () => props.showGrid, () => props.showNumbers, () => props.numberFor], () =>
-  renderer.requestRender(),
+watch(
+  [
+    () => props.colors,
+    () => props.showGrid,
+    () => props.showNumbers,
+    () => props.numberFor,
+    () => props.missingIndices,
+  ],
+  () => renderer.requestRender(),
 );
 </script>
 
