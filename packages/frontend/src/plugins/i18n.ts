@@ -14,8 +14,16 @@ const en = {
     studioTitle: 'Studio — Convert & edit your bead pattern | Fusible Beads Studio',
     studioDescription:
       'Upload an image and generate a fusible bead pattern in the browser. Brush, eraser, paint bucket and eyedropper let you adjust every bead, then export a high-res PNG or a PDF with bead numbers and a material list.',
+    inventoryTitle: 'Inventory — Tell the tool what beads you own | Fusible Beads Studio',
+    inventoryDescription:
+      'Record the beads you actually own per brand palette, then design under that real constraint. Pick colors by swatch and set quantities — all stored locally, never uploaded.',
   },
-  nav: { home: 'Home', studio: 'Studio', github: 'View source on GitHub' },
+  nav: {
+    home: 'Home',
+    studio: 'Studio',
+    inventory: 'Inventory',
+    github: 'View source on GitHub',
+  },
   home: {
     eyebrow: 'Runs locally · your data never leaves the device',
     titleLine1: 'Turn any image',
@@ -112,6 +120,27 @@ const en = {
     moduleFailed: 'A new version was just released. Please refresh the page and export again.',
   },
   palettePanel: { title: 'Palette' },
+  inventory: {
+    title: 'Inventory',
+    subtitle: 'Tell the tool which beads you own, so it can design under your real stock.',
+    paletteLabel: 'Brand palette',
+    own: 'Own',
+    quantity: 'Quantity',
+    qtyInvalid: 'Enter a whole number ≥ 0',
+    selectAll: 'Select all',
+    selectNone: 'Clear all',
+    bulkQtyLabel: 'Default quantity for checked',
+    bulkApply: 'Apply to checked',
+    summary: 'Registered {colors} colors · about {beads} beads',
+    summaryEmpty: 'No inventory yet for this palette',
+    reset: 'Reset this palette’s inventory',
+    resetConfirmTitle: 'Reset inventory?',
+    resetConfirmBody:
+      'This clears all recorded quantities for this brand palette. This cannot be undone.',
+    cancel: 'Cancel',
+    confirmReset: 'Reset',
+    backToStudio: 'Back to Studio',
+  },
 };
 
 const zh: typeof en = {
@@ -124,8 +153,16 @@ const zh: typeof en = {
     studioTitle: '工作台 — 转换并编辑你的拼豆图 | 拼豆星球',
     studioDescription:
       '上传图片，在浏览器里生成拼豆图纸。画笔、橡皮、油漆桶、取色器逐颗微调珠子颜色，随时撤销重做，再导出高清 PNG 或带珠子编号与材料清单的 PDF。',
+    inventoryTitle: '库存 — 告诉工具你手头有哪些珠 | 拼豆星球',
+    inventoryDescription:
+      '按品牌色板记录你真实拥有的珠子，再在这套库存约束下做图。按色卡勾选、填数量，全部本地保存，绝不上传。',
   },
-  nav: { home: '首页', studio: '工作台', github: '在 GitHub 查看源码' },
+  nav: {
+    home: '首页',
+    studio: '工作台',
+    inventory: '库存',
+    github: '在 GitHub 查看源码',
+  },
   home: {
     eyebrow: '本地运行 · 数据不离开设备',
     titleLine1: '把任何图片',
@@ -222,6 +259,26 @@ const zh: typeof en = {
     moduleFailed: '检测到新版本，请刷新页面后再导出。',
   },
   palettePanel: { title: '色板' },
+  inventory: {
+    title: '库存',
+    subtitle: '告诉工具你手头有哪些珠，它就能在你的真实库存约束下帮你做图。',
+    paletteLabel: '品牌色板',
+    own: '拥有',
+    quantity: '数量',
+    qtyInvalid: '请输入 ≥ 0 的整数',
+    selectAll: '全选',
+    selectNone: '全不选',
+    bulkQtyLabel: '给已勾选项设默认数量',
+    bulkApply: '应用到已勾选',
+    summary: '已登记 {colors} 个色 · 约 {beads} 颗',
+    summaryEmpty: '这个色板还没有库存',
+    reset: '清空本色板库存',
+    resetConfirmTitle: '清空库存？',
+    resetConfirmBody: '将清空该品牌色板下所有已登记的数量，此操作不可撤销。',
+    cancel: '取消',
+    confirmReset: '清空',
+    backToStudio: '返回工作台',
+  },
 };
 
 function initialLocale(): LocaleCode {

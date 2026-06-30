@@ -87,3 +87,30 @@ export interface ConvertResult {
   grid: BeadGrid;
   counts: BeadCount[];
 }
+
+/* ============================================================
+ * 库存驱动设计（Inventory-Driven Design）数据契约
+ * 全部集中于 shared，frontend 不另立平行类型（架构 AD-2）。
+ * 术语严格逐字采用 PRD 术语表。
+ * ============================================================ */
+
+/**
+ * 库存条目（Inventory Entry）：一条「色号 × 拥有数量」记录。
+ * - `colorId` 取自某品牌色板的 `BeadColor.id`（palette 内稳定，不用 code 或下标）。
+ * - `qty` 为非负整数；`0` 表示「曾登记但已用完」，与「从未登记」（无此条目）区分。
+ */
+export interface InventoryEntry {
+  colorId: string;
+  qty: number;
+}
+
+/**
+ * 库存（Inventory）：用户声明的、自己实际拥有的珠子集合，绑定到某个品牌色板。
+ * 由若干库存条目组成。
+ */
+export interface Inventory {
+  /** 绑定的品牌色板 id（`Palette.id`，如 'perler-30'） */
+  paletteId: string;
+  /** 库存条目集合 */
+  entries: InventoryEntry[];
+}

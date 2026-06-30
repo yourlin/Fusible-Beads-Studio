@@ -11,8 +11,11 @@ import {
   type BoardSize,
   type ConvertOptions,
   type ConvertResult,
+  type Inventory,
+  type InventoryEntry,
   type Palette,
 } from '@pindou/shared';
+import { loadInventory, saveInventory, clearInventory } from '@/services/inventoryRepo';
 
 /** 一个格的目标颜色变更（index = -1 表示清空为空珠）。 */
 export interface CellChange {
@@ -34,6 +37,11 @@ interface DesignState {
   originalGrid: BeadGrid | null;
   /** 颜色索引 → 用量，增量维护 */
   countMap: Record<number, number>;
+  /**
+   * 各品牌色板的库存，按 `Palette.id` 缓存于内存；落盘经 inventoryRepo。
+   * 未加载过的 palette 不在此 map（懒加载）。
+   */
+  inventories: Record<string, Inventory>;
 }
 
 function cloneGrid(grid: BeadGrid): BeadGrid {
@@ -62,6 +70,7 @@ export const useDesignStore = defineStore('design', {
     grid: null,
     originalGrid: null,
     countMap: {},
+    inventories: {},
   }),
 
   getters: {
@@ -132,6 +141,22 @@ export const useDesignStore = defineStore('design', {
         return r ? (r[col] ?? -1) : -1;
       };
     },
+    /** 当前品牌色板的库存（未加载则返回空库存，不触发副作用）。 */
+    currentInventory(state): Inventory {
+      return state.inventories[state.paletteId] ?? { paletteId: state.paletteId, entries: [] };
+    },
+    /** 某品牌色板的库存条目数（qty > 0 视为有效拥有色）。 */
+    inventoryColorCount(): number {
+      return this.currentInventory.entries.filter((e) => e.qty > 0).length;
+    },
+    /** 当前库存的总珠数（仅 qty > 0 计入）。 */
+    inventoryTotalBeads(): number {
+      return this.currentInventory.entries.reduce((s, e) => s + (e.qty > 0 ? e.qty : 0), 0);
+    },
+    /** 当前品牌色板是否已有非空库存（至少一条 qty > 0）。 */
+    hasInventory(): boolean {
+      return this.inventoryColorCount > 0;
+    },
   },
 
   actions: {
@@ -190,6 +215,75 @@ export const useDesignStore = defineStore('design', {
         }
       }
       return inverse;
+    },
+    /**
+     * 确保某品牌色板的库存已从仓储加载进内存（懒加载，幂等）。
+     * 写回 grid / 直读 localStorage 一律不在此处——只经 inventoryRepo。
+     */
+    ensureInventoryLoaded(paletteId?: string) {
+      const pid = paletteId ?? this.paletteId;
+      if (this.inventories[pid]) return;
+      const palette = getPalette(pid);
+      if (!palette) return;
+      this.inventories[pid] = loadInventory(palette);
+    },
+    /**
+     * 设置某色号的拥有数量并落盘。
+     * - qty <= 0 时移除该条目（取消勾选 / 清零均视为不拥有的登记，详见调用方）。
+     * - 仅接受非负整数；非法值由调用方（UI）拦截，这里做兜底归一化。
+     */
+    setInventoryEntry(colorId: string, qty: number, paletteId?: string) {
+      const pid = paletteId ?? this.paletteId;
+      this.ensureInventoryLoaded(pid);
+      const inv = this.inventories[pid] ?? { paletteId: pid, entries: [] };
+      const normalized = Number.isFinite(qty) ? Math.max(0, Math.floor(qty)) : 0;
+      const rest = inv.entries.filter((e) => e.colorId !== colorId);
+      const next: InventoryEntry[] =
+        normalized > 0 ? [...rest, { colorId, qty: normalized }] : rest;
+      const updated: Inventory = { paletteId: pid, entries: next };
+      this.inventories[pid] = updated;
+      saveInventory(updated);
+    },
+    /** 移除某色号的库存条目（等价于取消勾选「拥有」）。 */
+    removeInventoryEntry(colorId: string, paletteId?: string) {
+      const pid = paletteId ?? this.paletteId;
+      this.ensureInventoryLoaded(pid);
+      const inv = this.inventories[pid];
+      if (!inv) return;
+      const updated: Inventory = {
+        paletteId: pid,
+        entries: inv.entries.filter((e) => e.colorId !== colorId),
+      };
+      this.inventories[pid] = updated;
+      saveInventory(updated);
+    },
+    /**
+     * 批量设置一组色号的拥有数量（用于「给已勾选项设统一默认数量」）。
+     * qty <= 0 的色号会被移除。
+     */
+    setInventoryBulk(colorIds: string[], qty: number, paletteId?: string) {
+      const pid = paletteId ?? this.paletteId;
+      this.ensureInventoryLoaded(pid);
+      const inv = this.inventories[pid] ?? { paletteId: pid, entries: [] };
+      const normalized = Number.isFinite(qty) ? Math.max(0, Math.floor(qty)) : 0;
+      const target = new Set(colorIds);
+      const map = new Map(inv.entries.map((e) => [e.colorId, e.qty] as const));
+      for (const id of target) {
+        if (normalized > 0) map.set(id, normalized);
+        else map.delete(id);
+      }
+      const updated: Inventory = {
+        paletteId: pid,
+        entries: Array.from(map, ([colorId, q]) => ({ colorId, qty: q })),
+      };
+      this.inventories[pid] = updated;
+      saveInventory(updated);
+    },
+    /** 清空某品牌色板的全部库存（移除分键 + 内存）。 */
+    clearInventoryFor(paletteId?: string) {
+      const pid = paletteId ?? this.paletteId;
+      clearInventory(pid);
+      this.inventories[pid] = { paletteId: pid, entries: [] };
     },
     /** 清空当前设计（保留参数设置）。 */
     clearDesign() {

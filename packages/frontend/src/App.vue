@@ -20,6 +20,9 @@
         <v-btn variant="flat" color="primary" to="/studio" prepend-icon="mdi-palette" class="ml-1">
           {{ t('nav.studio') }}
         </v-btn>
+        <v-btn variant="text" to="/inventory" prepend-icon="mdi-basket-outline" class="ml-1">
+          {{ t('nav.inventory') }}
+        </v-btn>
         <v-btn-toggle
           :model-value="locale"
           mandatory

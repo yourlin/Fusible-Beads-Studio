@@ -16,6 +16,12 @@ const router = createRouter({
       component: () => import('@/views/StudioView.vue'),
       meta: { seoKey: 'studio' },
     },
+    {
+      path: '/inventory',
+      name: 'inventory',
+      component: () => import('@/views/InventoryView.vue'),
+      meta: { seoKey: 'inventory' },
+    },
   ],
 });
 
