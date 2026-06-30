@@ -1,0 +1,83 @@
+# generated: 2026-06-30
+# last_updated: 2026-06-30 (Epic 1-4 done)
+# project: pindou-studio
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; sprint-status surfaces open ones
+
+generated: 2026-06-30
+last_updated: 2026-06-30
+project: pindou-studio
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: 库存录入与持久化
+  epic-1: done
+  1-1-库存数据契约与仓储边界地基: done
+  1-2-按色卡勾选填量录入库存: done
+  1-3-库存录入的快捷批量操作: done
+  1-4-跨会话持久化与多品牌色板独立库存: done
+  1-5-库存维护二次确认与录入确认汇总: done
+  epic-1-retrospective: optional
+
+  # Epic 2: 库存模式与约束匹配
+  epic-2: done
+  2-1-analyzeinventory单一派生源: done
+  2-2-库存模式开关与单一派生getter: done
+  2-3-以库存色板重新匹配图纸: done
+  2-4-缺色与数量不足的可视标记: done
+  2-5-库存模式关闭基线零回归测试套件: done
+  epic-2-retrospective: optional
+
+  # Epic 3: 可拼性判定与缺口清单
+  epic-3: done
+  3-1-三态可拼性判定灯: done
+  3-2-缺口清单带人话解读复制为文本: done
+  3-3-缺色行用库存替代入口可见占位与缺色链可见: done
+  epic-3-retrospective: optional
+
+  # Epic 4: 感知替代（差异化命脉）
+  epic-4: done
+  4-1-deltae阈值结构初值与分级函数: done
+  4-2-缺色的感知替代建议: done
+  4-3-应用感知替代到图纸整色替换: done
+  4-4-替代影响预览前后对比: done
+  4-5-deltae阈值真实图纸标定定稿: done
+  epic-4-retrospective: optional
