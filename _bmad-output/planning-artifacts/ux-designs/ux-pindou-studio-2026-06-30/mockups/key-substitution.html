@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>感知替代预览卡 — 库存驱动设计</title>
+<style>
+/* =====================================================================
+   屏 3 / 3 — 感知替代预览卡（用库存替代）
+   对应 EXPERIENCE.md：
+   · Component Patterns — 替代预览卡（将替代的缺色数、受影响格数、每个替代的视觉影响分级；前后对比并排缩略；底部"应用全部/放弃"）
+   · State Patterns — 替代后（画布更新、三态灯刷新→绿/黄、可一键撤销）
+   · Voice and Tone — "用天蓝 A7 替代了浅蓝 H2（视觉影响：低）"，不甩 ΔE 账本
+   · Interaction Primitives — 替代可逆、触发显式、缺色→替代→可拼是一条可见的链
+   · Accessibility Floor — 视觉影响以文字分级 + 图标呈现，不只靠颜色
+   · Key Flows — KF-1 步④（替代预览卡：3 缺色将替代、影响 412 格、视觉影响低；前后对比看天空没糊）
+   实现 PRD：FR-7 / FR-8 / FR-9
+   视觉令牌全部来自现有 Vuetify light 主题（DESIGN.md frontmatter）。纯内联 CSS，离线。
+   ===================================================================== */
+:root{
+  --bg:#F7F4EF; --surface:#FFFFFF; --surface-variant:#EFEAE3;
+  --primary:#C8456B; --secondary:#15A08C; --accent:#F2A03D;
+  --success:#15A08C; --warning:#E0A100; --error:#D14343;
+  --on-surface:#2C2A33; --on-surface-variant:#5A5660;
+  --r-card:16px; --r-btn:10px; --r-chip:9px;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:#e7e2da;padding:28px;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  color:var(--on-surface);}
+.browser{max-width:1080px;margin:0 auto;border-radius:14px;overflow:hidden;
+  box-shadow:0 18px 50px rgba(44,42,51,.20);background:var(--surface);}
+.chrome{background:#e3ddd4;display:flex;align-items:center;gap:8px;padding:11px 16px;}
+.dot{width:12px;height:12px;border-radius:50%;}
+.dot.r{background:#ec6a5e;}.dot.y{background:#f4bf4f;}.dot.g{background:#61c554;}
+.addr{flex:1;margin-left:14px;background:#fff;border-radius:8px;padding:6px 14px;
+  font-size:13px;color:var(--on-surface-variant);}
+/* 模态遮罩上的居中大卡 */
+.viewport{background:var(--bg);padding:34px 30px;position:relative;}
+.scrim{position:absolute;inset:0;background:rgba(44,42,51,.28);}
+.card{position:relative;max-width:660px;margin:0 auto;background:var(--surface);
+  border-radius:var(--r-card);box-shadow:0 22px 60px rgba(44,42,51,.30);
+  padding:26px 28px 24px;}
+.card-title{display:flex;align-items:center;gap:10px;margin:0 0 4px;}
+.title-ico{width:30px;height:30px;border-radius:9px;background:rgba(200,69,107,.12);
+  color:var(--primary);display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:800;flex:0 0 auto;}
+h1{font-size:19px;margin:0;font-weight:700;}
+
+/* 摘要行 */
+.summary{background:var(--surface-variant);border-radius:12px;padding:13px 16px;
+  font-size:13.5px;line-height:1.55;margin:14px 0 20px;}
+.summary b{color:var(--on-surface);}
+.imp-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:7px;
+  font-size:12px;font-weight:700;background:rgba(21,160,140,.16);color:#0c6457;}
+.imp-pill .d{width:8px;height:8px;border-radius:50%;background:var(--success);}
+
+/* 前后对比 */
+.compare{display:flex;gap:18px;align-items:stretch;margin-bottom:6px;}
+.compare-col{flex:1;}
+.cmp-head{font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--on-surface-variant);
+  text-transform:uppercase;margin:0 0 8px;text-align:center;}
+.mini{background:#faf8f4;border:1.5px solid var(--surface-variant);border-radius:12px;
+  padding:11px;}
+.mini-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;}
+.mb{aspect-ratio:1;border-radius:50%;box-shadow:inset 0 -1px 2px rgba(0,0,0,.13);}
+.mb.missing{background-image:repeating-linear-gradient(45deg,
+  rgba(242,160,61,.95) 0,rgba(242,160,61,.95) 2px,rgba(255,255,255,.55) 2px,rgba(255,255,255,.55) 4px);
+  box-shadow:inset 0 0 0 1.5px var(--accent);}
+.arrow{display:flex;align-items:center;font-size:24px;color:var(--on-surface-variant);font-weight:300;}
+
+/* 替代明细 */
+.subs{margin:18px 0 4px;display:flex;flex-direction:column;gap:9px;}
+.sub-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;
+  background:var(--surface-variant);font-size:13px;}
+.sw{width:22px;height:22px;border-radius:6px;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);}
+.sub-arrow{color:var(--on-surface-variant);font-weight:300;font-size:15px;margin:0 1px;}
+.sub-text{flex:1;}
+.sub-text b{font-weight:700;}
+.imp{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:6px;flex:0 0 auto;
+  display:inline-flex;align-items:center;gap:5px;}
+.imp .d{width:7px;height:7px;border-radius:50%;}
+.imp.low{background:rgba(21,160,140,.15);color:#0c6457;}
+.imp.low .d{background:var(--success);}
+.imp.mid{background:rgba(224,161,0,.16);color:#8a6400;}
+.imp.mid .d{background:var(--warning);}
+
+/* 底部按钮 */
+.actions{display:flex;gap:12px;margin-top:22px;}
+.btn{flex:1;padding:13px;border-radius:var(--r-btn);font-size:14.5px;font-weight:600;
+  letter-spacing:.4px;cursor:pointer;}
+.btn-fill{border:none;background:var(--primary);color:#fff;
+  box-shadow:0 5px 14px rgba(200,69,107,.32);}
+.btn-outline{background:transparent;border:1.5px solid #d6cfc4;color:var(--on-surface-variant);}
+.undo-note{text-align:center;font-size:11.5px;color:var(--on-surface-variant);margin:12px 0 0;}
+
+.caption{margin:22px auto 0;max-width:1080px;color:#6b665e;font-size:12.5px;
+  text-align:center;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="browser">
+  <div class="chrome">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <div class="addr">pindou.studio/studio</div>
+  </div>
+  <div class="viewport">
+    <div class="scrim"></div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="title-ico">&#8644;</span>
+        <h1>用库存替代</h1>
+      </div>
+
+      <!-- 摘要：说人话，ΔE 折成"视觉影响：低" -->
+      <div class="summary">
+        <b>3 个缺色</b>将用你库存里的色替代，影响 <b>412 格</b>。
+        整体视觉影响： <span class="imp-pill"><span class="d"></span>低</span>
+        —— 几乎看不出差别。
+      </div>
+
+      <!-- 前后对比：并排缩略 -->
+      <div class="compare">
+        <div class="compare-col">
+          <p class="cmp-head">替代前</p>
+          <div class="mini">
+            <div class="mini-grid">
+              <div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb missing"></div><div class="mb missing"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb missing"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div>
+              <div class="mb" style="background:#7EC8E3"></div><div class="mb missing"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb missing"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div>
+              <div class="mb missing"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#F4F4F1"></div><div class="mb" style="background:#F4A6C0"></div><div class="mb" style="background:#F4A6C0"></div><div class="mb" style="background:#F4F4F1"></div><div class="mb" style="background:#202020"></div><div class="mb missing"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div>
+              <div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#F4A6C0"></div><div class="mb" style="background:#FCD514"></div><div class="mb" style="background:#FCD514"></div><div class="mb" style="background:#F4A6C0"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb missing"></div><div class="mb" style="background:#7EC8E3"></div>
+              <div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb missing"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arrow">&#8594;</div>
+
+        <div class="compare-col">
+          <p class="cmp-head">替代后</p>
+          <div class="mini">
+            <div class="mini-grid">
+              <div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#A9CCE3"></div><div class="mb" style="background:#A9CCE3"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#A9CCE3"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div>
+              <div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#A9CCE3"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#A9CCE3"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div>
+              <div class="mb" style="background:#A9CCE3"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#F4F4F1"></div><div class="mb" style="background:#F4A6C0"></div><div class="mb" style="background:#F4A6C0"></div><div class="mb" style="background:#F4F4F1"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#A9CCE3"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div>
+              <div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#F4A6C0"></div><div class="mb" style="background:#FCD514"></div><div class="mb" style="background:#FCD514"></div><div class="mb" style="background:#F4A6C0"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#D7B47E"></div><div class="mb" style="background:#7EC8E3"></div>
+              <div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#202020"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#D7B47E"></div><div class="mb" style="background:#7EC8E3"></div><div class="mb" style="background:#7EC8E3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 每个替代一行：人话 + 小色块 + 视觉影响分级 -->
+      <div class="subs">
+        <div class="sub-row">
+          <span class="sw" style="background:#1C3F94"></span>
+          <span class="sub-arrow">&#8594;</span>
+          <span class="sw" style="background:#A9CCE3"></span>
+          <span class="sub-text">深蓝 <b>P13</b> 用 浅蓝 <b>P16</b> 替代——那块天空不会糊</span>
+          <span class="imp low"><span class="d"></span>视觉影响：低</span>
+        </div>
+
+        <div class="sub-row">
+          <span class="sw" style="background:#6E4524"></span>
+          <span class="sub-arrow">&#8594;</span>
+          <span class="sw" style="background:#D7B47E"></span>
+          <span class="sub-text">棕 <b>P24</b> 用 浅棕 <b>P22</b> 替代</span>
+          <span class="imp mid"><span class="d"></span>视觉影响：中</span>
+        </div>
+
+        <div class="sub-row">
+          <span class="sw" style="background:#F6C9A6"></span>
+          <span class="sub-arrow">&#8594;</span>
+          <span class="sw" style="background:#F4A6C0"></span>
+          <span class="sub-text">肤色 <b>P29</b> 用 粉 <b>P08</b> 替代</span>
+          <span class="imp low"><span class="d"></span>视觉影响：低</span>
+        </div>
+      </div>
+
+      <!-- 底部按钮 -->
+      <div class="actions">
+        <button class="btn btn-outline">放弃</button>
+        <button class="btn btn-fill">应用全部</button>
+      </div>
+      <p class="undo-note">应用后随时可一键撤销，回到替代前。</p>
+    </div>
+
+  </div>
+</div>
+<p class="caption">屏 3/3 · 感知替代预览卡：人话摘要（影响 412 格·视觉影响低）、前后并排对比缩略、逐条替代 + 视觉影响低/中分级、"应用全部 / 放弃" + 可撤销提示。</p>
+</body>
+</html>

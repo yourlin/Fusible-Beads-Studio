@@ -9,3 +9,12 @@ cdk.out/
 .vite/
 test-results/
 playwright-report/
+
+# BMad / IDE 工具目录（本地开发环境，非项目代码）
+.claude/
+_bmad/
+# Kiro：只忽略工具安装的 skills；steering 是项目协作规则，保留入库
+.kiro/skills/
+# BMad 运行中间态（工具日志/草稿），不入库
+_bmad-output/**/.memlog.md
+_bmad-output/**/.working/

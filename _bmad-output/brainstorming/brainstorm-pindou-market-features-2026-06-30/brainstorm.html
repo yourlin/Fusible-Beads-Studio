@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>盘点拼豆软件功能版图 · 头脑风暴纪念物</title>
+<style>
+  /* ============ 调色板：有限的拼豆色板 ============ */
+  :root{
+    --bg:#13131f;
+    --bg2:#1c1c2e;
+    --panel:#23233a;
+    --ink:#f4f1e8;
+    --ink-dim:#a9a6c4;
+    --grid:#34344e;
+    /* 拼豆经典珠色 */
+    --b-red:#e8453c;
+    --b-orange:#f5872a;
+    --b-yellow:#f7c948;
+    --b-lime:#9bd64a;
+    --b-green:#3fb86b;
+    --b-teal:#2fb3b3;
+    --b-blue:#3a86ff;
+    --b-indigo:#6c5ce7;
+    --b-pink:#ff6fae;
+    --b-cream:#f0e4c8;
+    --b-brown:#8a5a3c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      repeating-linear-gradient(0deg,transparent,transparent 23px,rgba(255,255,255,.015) 23px,rgba(255,255,255,.015) 24px),
+      repeating-linear-gradient(90deg,transparent,transparent 23px,rgba(255,255,255,.015) 23px,rgba(255,255,255,.015) 24px),
+      radial-gradient(circle at 20% 0%,#1e1e36,transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px 80px;}
+
+  /* 像素字体感标题 */
+  .pix{
+    font-family:"Courier New",monospace;
+    font-weight:900;
+    letter-spacing:1px;
+    text-shadow:2px 2px 0 rgba(0,0,0,.45);
+  }
+
+  /* ============ 顶部 HERO ============ */
+  header{
+    text-align:center;
+    padding:70px 16px 50px;
+    position:relative;
+  }
+  .pellet-board{
+    display:grid;
+    grid-template-columns:repeat(16,1fr);
+    gap:3px;
+    max-width:520px;
+    margin:0 auto 34px;
+    padding:10px;
+    background:var(--panel);
+    border-radius:8px;
+    box-shadow:inset 0 0 0 2px var(--grid),0 10px 30px rgba(0,0,0,.4);
+  }
+  .pellet{
+    aspect-ratio:1;
+    border-radius:50%;
+    box-shadow:inset -1px -1px 1px rgba(0,0,0,.35),inset 1px 1px 1px rgba(255,255,255,.4);
+    transition:transform .15s;
+  }
+  .pellet::after{content:"";display:block;width:32%;height:32%;margin:18% auto;border-radius:50%;background:rgba(255,255,255,.55);}
+  .pellet:hover{transform:scale(1.25);z-index:2;}
+  h1{font-size:clamp(28px,5vw,46px);line-height:1.15;margin-bottom:10px;}
+  h1 .accent{color:var(--b-yellow);}
+  .subtitle{color:var(--ink-dim);font-size:16px;max-width:640px;margin:0 auto 26px;}
+  .meta-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+  .chip{
+    background:var(--bg2);
+    border:2px solid var(--grid);
+    border-radius:4px;
+    padding:7px 13px;
+    font-size:13px;
+    font-family:"Courier New",monospace;
+    display:flex;align-items:center;gap:7px;
+  }
+  .chip b{color:var(--b-teal);}
+  .chip .dot{width:10px;height:10px;border-radius:2px;}
+
+  /* 想法计数大字 */
+  .bignum{
+    display:inline-block;
+    background:linear-gradient(135deg,var(--b-pink),var(--b-indigo));
+    -webkit-background-clip:text;background-clip:text;
+    color:transparent;
+    font-size:64px;
+  }
+
+  /* ============ 技法区块通用 ============ */
+  section{margin-top:64px;}
+  .sec-head{display:flex;align-items:center;gap:14px;margin-bottom:8px;}
+  .sec-badge{
+    width:46px;height:46px;flex:none;
+    display:grid;place-items:center;
+    border-radius:6px;
+    font-family:"Courier New",monospace;font-weight:900;font-size:20px;
+    color:#13131f;
+    box-shadow:inset -2px -2px 0 rgba(0,0,0,.2),inset 2px 2px 0 rgba(255,255,255,.3);
+  }
+  .sec-head h2{font-size:24px;}
+  .sec-head .en{display:block;font-size:12px;color:var(--ink-dim);font-weight:400;letter-spacing:2px;text-transform:uppercase;font-family:"Courier New",monospace;}
+  .sec-desc{color:var(--ink-dim);font-size:14px;margin:0 0 22px 60px;}
+
+  /* ===== 技法1：珠板分区 (Job to Be Done) ===== */
+  .jobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+  .job{
+    background:var(--panel);
+    border-radius:8px;
+    overflow:hidden;
+    border:2px solid var(--grid);
+    cursor:pointer;
+    transition:transform .12s,box-shadow .12s;
+  }
+  .job:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(0,0,0,.45);}
+  .job-bar{height:8px;}
+  .job-top{display:flex;align-items:center;gap:10px;padding:12px 14px 6px;}
+  .job-idx{font-family:"Courier New",monospace;font-weight:900;font-size:13px;color:#13131f;width:24px;height:24px;border-radius:4px;display:grid;place-items:center;flex:none;}
+  .job-top h3{font-size:15px;}
+  .job-top .cnt{margin-left:auto;font-size:11px;color:var(--ink-dim);font-family:"Courier New",monospace;}
+  .job ul{list-style:none;padding:4px 14px 14px;font-size:13px;color:var(--ink-dim);max-height:0;overflow:hidden;transition:max-height .35s ease;}
+  .job.open ul{max-height:600px;}
+  .job li{padding:4px 0 4px 16px;position:relative;border-top:1px dashed var(--grid);}
+  .job li:first-child{border-top:none;}
+  .job li::before{content:"";position:absolute;left:0;top:11px;width:8px;height:8px;border-radius:50%;}
+  .hint{font-size:11px;color:var(--ink-dim);margin-left:auto;font-style:italic;}
+
+  /* ===== 技法2：形态矩阵 (Morphological) ===== */
+  .matrix{overflow-x:auto;border-radius:8px;border:2px solid var(--grid);}
+  table{border-collapse:collapse;width:100%;min-width:680px;background:var(--panel);}
+  th,td{padding:9px 11px;text-align:left;font-size:13px;border:1px solid var(--grid);vertical-align:top;}
+  thead th{background:var(--bg2);font-family:"Courier New",monospace;font-size:12px;letter-spacing:1px;color:var(--b-yellow);}
+  tbody th{background:var(--bg2);width:120px;font-weight:700;}
+  tbody th .d{display:block;width:14px;height:14px;border-radius:3px;margin-bottom:5px;}
+  .opt{display:inline-block;background:var(--bg);border:1px solid var(--grid);border-radius:4px;padding:3px 8px;margin:2px 3px 2px 0;font-size:12px;color:var(--ink-dim);transition:.12s;}
+  .opt:hover{border-color:var(--b-teal);color:var(--ink);}
+  .opt.star{border-color:var(--b-pink);color:var(--b-pink);box-shadow:0 0 0 1px var(--b-pink);}
+
+  /* ===== 技法3：偷来的卡片 (Cross-Pollination) ===== */
+  .steals{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;}
+  .steal{
+    background:var(--panel);border-radius:8px;padding:16px;
+    border:2px solid var(--grid);position:relative;overflow:hidden;
+    transition:transform .12s;
+  }
+  .steal:hover{transform:rotate(-.6deg) translateY(-2px);}
+  .steal::before{content:"借";position:absolute;top:-8px;right:-6px;font-size:46px;font-family:"Courier New",monospace;font-weight:900;color:rgba(255,255,255,.05);}
+  .steal .src{font-family:"Courier New",monospace;font-weight:900;font-size:14px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+  .steal .src .tag{width:11px;height:11px;border-radius:2px;}
+  .steal p{font-size:13px;color:var(--ink-dim);}
+
+  /* ===== 技法4：正反翻转 (Assumption Reversal) ===== */
+  .flips{display:grid;gap:12px;}
+  .flip{
+    display:grid;grid-template-columns:1fr 44px 1fr;align-items:stretch;gap:0;
+    background:var(--panel);border-radius:8px;overflow:hidden;border:2px solid var(--grid);
+  }
+  .flip .side{padding:13px 16px;font-size:13px;}
+  .flip .assume{background:rgba(255,255,255,.02);color:var(--ink-dim);}
+  .flip .assume small{display:block;font-family:"Courier New",monospace;font-size:10px;letter-spacing:1px;color:var(--b-brown);margin-bottom:3px;}
+  .flip .arrow{display:grid;place-items:center;background:var(--bg2);font-size:20px;color:var(--b-yellow);}
+  .flip .rev{background:linear-gradient(135deg,rgba(108,92,231,.16),rgba(255,111,174,.10));color:var(--ink);}
+  .flip .rev small{display:block;font-family:"Courier New",monospace;font-size:10px;letter-spacing:1px;color:var(--b-pink);margin-bottom:3px;}
+  @media(max-width:560px){.flip{grid-template-columns:1fr;}.flip .arrow{height:30px;transform:rotate(90deg);}}
+
+  /* ===== 高潮：机会区 ===== */
+  .finale{margin-top:80px;text-align:center;}
+  .finale h2{font-size:30px;margin-bottom:6px;}
+  .finale .lead{color:var(--ink-dim);max-width:680px;margin:0 auto 36px;font-size:15px;}
+  .opps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;text-align:left;}
+  .opp{
+    background:var(--panel);border-radius:10px;padding:0;overflow:hidden;
+    border:2px solid var(--grid);position:relative;
+    transition:transform .15s,box-shadow .15s;
+  }
+  .opp:hover{transform:translateY(-5px) scale(1.01);box-shadow:0 14px 36px rgba(0,0,0,.5);}
+  .opp .crown{
+    padding:16px 18px;color:#13131f;
+    display:flex;align-items:center;gap:12px;
+  }
+  .opp .crown .n{font-family:"Courier New",monospace;font-size:30px;font-weight:900;}
+  .opp .crown h3{font-size:17px;line-height:1.25;}
+  .opp .body{padding:16px 18px;}
+  .opp .body p{font-size:13px;color:var(--ink-dim);margin-bottom:10px;}
+  .opp .why{font-size:12px;background:var(--bg);border-left:3px solid var(--b-teal);padding:8px 11px;border-radius:0 4px 4px 0;color:var(--ink);}
+
+  /* 三层版图 */
+  .layers{margin-top:48px;display:grid;gap:8px;text-align:left;}
+  .layer{display:flex;gap:14px;align-items:center;padding:14px 18px;border-radius:8px;background:var(--panel);border:2px solid var(--grid);}
+  .layer .lv{font-family:"Courier New",monospace;font-weight:900;font-size:13px;color:#13131f;padding:4px 9px;border-radius:4px;flex:none;}
+  .layer div b{font-size:14px;}
+  .layer div span{font-size:13px;color:var(--ink-dim);}
+
+  .insight-band{margin-top:40px;background:var(--bg2);border:2px dashed var(--grid);border-radius:10px;padding:22px 24px;text-align:left;}
+  .insight-band h3{font-size:14px;font-family:"Courier New",monospace;letter-spacing:1px;color:var(--b-yellow);margin-bottom:12px;}
+  .insight-band .ins{display:flex;gap:10px;font-size:13px;color:var(--ink-dim);padding:6px 0;border-top:1px dashed var(--grid);}
+  .insight-band .ins:first-of-type{border-top:none;}
+  .insight-band .ins span:first-child{color:var(--b-teal);font-family:"Courier New",monospace;font-weight:900;flex:none;}
+
+  footer{margin-top:70px;text-align:center;color:var(--ink-dim);font-size:12px;font-family:"Courier New",monospace;}
+  footer .strip{display:flex;gap:3px;justify-content:center;margin-bottom:16px;}
+  footer .strip i{width:14px;height:14px;border-radius:50%;display:inline-block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ HERO ============ -->
+  <header>
+    <div class="pellet-board" id="board" aria-hidden="true"></div>
+    <h1 class="pix">拼豆软件功能版图 <span class="accent">·</span> 头脑风暴纪念物</h1>
+    <p class="subtitle">穷举同类工具的全部功能，并为 <b>pindou-studio</b>（图片转拼豆 · CIEDE2000 颜色匹配 · 网格编辑 · PNG/PDF 导出）标出未做、值得切入的差异化机会。</p>
+    <div class="meta-chips">
+      <div class="chip"><span class="dot" style="background:var(--b-green)"></span>模式 <b>Ideate for me · 替我发散</b></div>
+      <div class="chip"><span class="dot" style="background:var(--b-blue)"></span>日期 <b>2026-06-30</b></div>
+      <div class="chip"><span class="dot" style="background:var(--b-pink)"></span>状态 <b>已完成</b></div>
+      <div class="chip"><span class="dot" style="background:var(--b-yellow)"></span>技法 <b>4 种</b></div>
+    </div>
+    <p style="margin-top:30px;font-family:'Courier New',monospace;color:var(--ink-dim);">
+      <span class="bignum pix">≈130</span><br>颗灵感珠子在这块板上落定
+    </p>
+  </header>
+
+  <!-- ============ 技法 1：Job to Be Done — 珠板分区 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-badge" style="background:var(--b-yellow)">01</div>
+      <h2 class="pix">用户任务分层<span class="en">Job to Be Done</span></h2>
+    </div>
+    <p class="sec-desc">把整张功能珠板按 <b>8 个用户 Job</b> 分区——从拿到图，到摆完最后一颗。点任意分区展开它的功能珠子。</p>
+    <div class="jobs" id="jobs"></div>
+  </section>
+
+  <!-- ============ 技法 2：Morphological — 维度×选项矩阵 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-badge" style="background:var(--b-teal)">02</div>
+      <h2 class="pix">形态分析矩阵<span class="en">Morphological Analysis</span></h2>
+    </div>
+    <p class="sec-desc">把产品拆成 6 个维度，每个维度铺开可选项。<span style="color:var(--b-pink)">高亮粉边</span>的格子=组合空白最肥的地带。</p>
+    <div class="matrix"><table id="matrix"></table></div>
+  </section>
+
+  <!-- ============ 技法 3：Cross-Pollination — 偷来的卡片 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-badge" style="background:var(--b-pink)">03</div>
+      <h2 class="pix">跨界借鉴<span class="en">Cross-Pollination</span></h2>
+    </div>
+    <p class="sec-desc">从隔壁软件的工具箱里，各偷一把好用的螺丝刀。</p>
+    <div class="steals" id="steals"></div>
+  </section>
+
+  <!-- ============ 技法 4：Assumption Reversal — 翻转对照 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-badge" style="background:var(--b-indigo)">04</div>
+      <h2 class="pix">假设反转<span class="en">Assumption Reversal</span></h2>
+    </div>
+    <p class="sec-desc">把行业里"理所当然"的默认掀过来——右侧紫粉色的那一面，藏着新物种。</p>
+    <div class="flips" id="flips"></div>
+  </section>
+
+  <!-- ============ 高潮：机会区 ============ -->
+  <section class="finale">
+    <h2 class="pix">🏆 三大机会区</h2>
+    <p class="lead">综合 4 种技法的洞察，pindou-studio 以小博大、且最贴合其 CIEDE2000 色彩匹配核心能力的三个差异化突破方向。</p>
+    <div class="opps" id="opps"></div>
+
+    <div class="layers" id="layers"></div>
+
+    <div class="insight-band" id="insights"></div>
+  </section>
+
+  <footer>
+    <div class="strip" id="footstrip"></div>
+    BMAD Brainstorming · brainstorm-pindou-market-features · 2026-06-30<br>
+    一块由 ≈130 颗想法珠拼成的纪念板
+  </footer>
+
+</div>
+
+<script>
+/* ===== 调色板 ===== */
+var BC = ['#e8453c','#f5872a','#f7c948','#9bd64a','#3fb86b','#2fb3b3','#3a86ff','#6c5ce7','#ff6fae','#f0e4c8','#8a5a3c'];
+
+/* ---- HERO 珠板：随机彩珠 + 轻微闪动 ---- */
+(function(){
+  var b=document.getElementById('board'),n=16*5;
+  for(var i=0;i<n;i++){
+    var d=document.createElement('div');
+    d.className='pellet';
+    d.style.background=BC[Math.floor(Math.random()*BC.length)];
+    b.appendChild(d);
+  }
+  var cells=b.children;
+  setInterval(function(){
+    var c=cells[Math.floor(Math.random()*cells.length)];
+    c.style.background=BC[Math.floor(Math.random()*BC.length)];
+  },420);
+})();
+
+/* ---- 技法1：8 个 Job 分区 ---- */
+var JOBS=[
+ {t:'获取 / 导入',c:'#e8453c',items:['本地图片上传 PNG/JPG/SVG/GIF','移动端相机直接拍照导入','URL / 剪贴板粘贴图片','内置图库 / 模板市场（卡通·表情·像素角色）','AI 文生图直接生成待转换图案','导入已有图纸文件（跨软件互转）','屏幕截图 / 网页抓取']},
+ {t:'图像转珠',c:'#f5872a',items:['自动颜色匹配到指定品牌色板','可调网格分辨率（珠数=成品尺寸）','抖动 / 不抖动算法选择 dithering','边缘检测 / 卡通描边强化','减色 / 限制总颜色数 K-means','背景一键去除 / 抠图','亮度对比度饱和度预处理滑块','转换前裁剪 / 旋转 / 缩放','保留透明区域为空珠']},
+ {t:'编辑',c:'#f7c948',items:['逐珠画笔 / 橡皮 / 油漆桶填充','直线 / 矩形 / 圆形等形状工具','选区 / 套索 / 移动 / 复制粘贴','图层支持（多层叠加编辑）','撤销 / 重做与历史记录','对称镜像绘制（左右 / 四向）','取色器（吸管）','网格缩放 / 平移 / 小地图导航','手动微调单格为相近珠色','替换全部某颜色为另一颜色','添加文字 / 字母珠排版']},
+ {t:'组织',c:'#9bd64a',items:['超大图自动切分为多块拼板 tiling','拼板间对齐参考线与拼接预览','多画板项目管理（一作品多部件）','模板 / 我的作品云端保存命名','版本快照 / 分支']},
+ {t:'物料',c:'#3fb86b',items:['各颜色珠子用量统计清单','按品牌色号映射 Hama/Perler/咪小窝/盼丢','估算总珠数与成品物理尺寸','估算成本 / 重量','购物清单一键生成（对接电商）','库存管理——我有哪些 / 还差多少','缺色替代建议（相近色顶替缺货）']},
+ {t:'导出',c:'#2fb3b3',items:['PNG 成品效果预览图','PDF 图纸（带网格坐标 / 色号标注）','分块打印 A4 多页拼接','色号编号图（每格标数字）','导出珠图工程文件（可再编辑）','导出 Excel / CSV 物料表','生成可分享链接 / 二维码','导出 GIF / 视频展示摆放过程']},
+ {t:'搭建跟随',c:'#3a86ff',items:['交互式逐格高亮引导（点一摆一）','按行 / 按色批次摆放模式','进度追踪 / 已完成打勾','平板手机摆珠陪伴（防熄屏·放大）','实拍对位 AR（图纸叠真实板上）','语音播报下一颗坐标与颜色']},
+ {t:'社区',c:'#6c5ce7',items:['作品图库浏览与点赞收藏','图纸上传分享 / 下载他人图纸','图纸交易市场（付费 / 创作者分成）','教程 / 视频 / 新手引导','挑战赛 / 活动 / 勋章激励','关注创作者与动态流','评论与二次创作 remix']}
+];
+(function(){
+  var box=document.getElementById('jobs');
+  JOBS.forEach(function(j,idx){
+    var el=document.createElement('div');el.className='job';
+    var lis=j.items.map(function(it){return '<li style="--c:'+j.c+'"><span></span>'+it+'</li>';}).join('')
+      .replace(/<li style="--c:([^"]+)"><span><\/span>/g,function(_,c){return '<li><i style="position:absolute;left:0;top:11px;width:8px;height:8px;border-radius:50%;background:'+c+'"></i>';});
+    el.innerHTML=
+      '<div class="job-bar" style="background:'+j.c+'"></div>'+
+      '<div class="job-top">'+
+        '<span class="job-idx" style="background:'+j.c+'">'+(idx+1)+'</span>'+
+        '<h3>'+j.t+'</h3>'+
+        '<span class="cnt">'+j.items.length+' 项</span>'+
+      '</div>'+
+      '<ul>'+lis+'</ul>'+
+      '<div style="padding:0 14px 12px;"><span class="hint">点击展开 / 收起</span></div>';
+    el.addEventListener('click',function(){el.classList.toggle('open');});
+    box.appendChild(el);
+  });
+})();
+
+/* ---- 技法2：形态矩阵 ---- */
+var DIMS=[
+ {n:'媒介',c:'#e8453c',o:['拼豆 Hama','钻石画','十字绣','乐高马赛克','水拼豆 Aquabeads','像素针织','纸艺马赛克','美甲贴像素',{s:'单一工具多媒介换算'}]},
+ {n:'几何',c:'#f5872a',o:['方形格（标准）','六边形 / 六角板','圆形 / 放射状','三角格','异形拼接板',{s:'3D 体素 / 立体分层'}]},
+ {n:'平台',c:'#f7c948',o:['纯网页','iOS / Android','桌面客户端','微信 / 抖音小程序','平板 + Apple Pencil','PWA 离线安装']},
+ {n:'色板',c:'#3fb86b',o:['多品牌官方内置','自定义实际珠色',{s:'限色近似（预算约束）'},'荧光 / 夜光 / 金属标记','色板间换算与差异','渐变自动铺设']},
+ {n:'商业',c:'#3a86ff',o:['完全免费 / 开源','Freemium 订阅','去广告买断','图纸市场抽成',{s:'设计完直接下单买料'},'B 端授权（店 / 教室）']},
+ {n:'智能',c:'#6c5ce7',o:['纯手动','自动颜色匹配（基线）','AI 生成图案再转珠',{s:'AI 优化可摆性 / 减噪'},'自然语言指令编辑','智能推荐尺寸与难度']}
+];
+(function(){
+  var t=document.getElementById('matrix');
+  t.innerHTML='<thead><tr><th>维度</th><th>可选项 →</th></tr></thead>';
+  var tb=document.createElement('tbody');
+  DIMS.forEach(function(d){
+    var opts=d.o.map(function(o){
+      if(typeof o==='object')return '<span class="opt star">★ '+o.s+'</span>';
+      return '<span class="opt">'+o+'</span>';
+    }).join('');
+    var tr=document.createElement('tr');
+    tr.innerHTML='<th><span class="d" style="background:'+d.c+'"></span>'+d.n+'</th><td>'+opts+'</td>';
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+})();
+
+/* ---- 技法3：偷来的卡片 ---- */
+var STEALS=[
+ {s:'Aseprite',c:'#e8453c',p:'调色板锁定 / 索引色模式、动画帧（让拼豆做翻页动画）、洋葱皮。'},
+ {s:'Photoshop',c:'#f5872a',p:'曲线 / 色阶精修、智能对象、调整图层的非破坏式编辑。'},
+ {s:'Figma',c:'#f7c948',p:'实时多人协作同编一张图、组件复用、评论批注。'},
+ {s:'Canva',c:'#9bd64a',p:'海量模板 + 拖拽、品牌套件、一键改尺寸。'},
+ {s:'Procreate',c:'#3fb86b',p:'Apple Pencil 压感、手势快捷、延时回放录制。'},
+ {s:'GitHub',c:'#2fb3b3',p:'图纸版本历史 / diff / fork 他人图纸再改。'},
+ {s:'Duolingo',c:'#3a86ff',p:'拼豆新手关卡化教学、连续打卡、成就激励。'},
+ {s:'Strava / 健身',c:'#6c5ce7',p:'摆珠进度可视化、累计颗数里程碑、社区晒成果。'},
+ {s:'宜家 / 3D 家居',c:'#ff6fae',p:'AR 预览成品挂在你家墙上的样子。'},
+ {s:'打印店 CtrlP',c:'#f0e4c8',p:'分块打印自动排版、出血对位标记、海报拼贴。'},
+ {s:'Spotify',c:'#8a5a3c',p:'按风格 / 心情 / 节日的图纸推荐电台。'},
+ {s:'淘宝 / 小红书',c:'#e8453c',p:'所见即所买——点图纸里某色，直达购买该色号补货。'},
+ {s:'Notion',c:'#3fb86b',p:'作品 + 物料 + 进度一体的工作台看板。'},
+ {s:'AutoCAD',c:'#3a86ff',p:'精确坐标输入、标尺、按真实尺寸出图。'},
+ {s:'字幕 / OCR 工具',c:'#6c5ce7',p:'上传实拍拼豆成品，反向识别成可编辑图纸。'}
+];
+(function(){
+  var box=document.getElementById('steals');
+  STEALS.forEach(function(s){
+    var el=document.createElement('div');el.className='steal';
+    el.innerHTML='<div class="src"><span class="tag" style="background:'+s.c+'"></span>偷自 '+s.s+'</div><p>'+s.p+'</p>';
+    box.appendChild(el);
+  });
+})();
+
+/* ---- 技法4：翻转对照 ---- */
+var FLIPS=[
+ {a:'先有图再转珠',r:'先选手头现有珠子库存，反推能做什么图案（库存驱动设计）'},
+ {a:'追求最还原原图',r:'主动风格化：最少颜色 / 最低难度也好看（极简珠图生成器）'},
+ {a:'一个人做',r:'多人分块协作拼一张巨幅墙画，各认领一块拼板'},
+ {a:'屏幕上设计',r:'实物优先：拍下随手摆的珠子，自动数字化存档 + 补全建议'},
+ {a:'静态图纸',r:'动态：拼豆灯牌 / 像素动画分帧图纸'},
+ {a:'导出就结束',r:'摆放中实时纠错：拍照检测你摆错的格子'},
+ {a:'面向成人玩家',r:'面向儿童 / 教学：超大格、语音引导、家长进度报告'},
+ {a:'通用工具',r:'垂直场景：婚礼 / 节日 / 宠物肖像 / 游戏角色专用模板'},
+ {a:'卖工具',r:'工具免费，靠精准把设计转成补货订单赚耗材钱'},
+ {a:'颜色越多越好',r:'可达性模式：色盲友好配色、限色高对比'},
+ {a:'方形像素',r:'用珠子做字体 / 二维码 / 可扫码的功能性拼豆'},
+ {a:'线上独立 App',r:'嵌入式：给拼豆电商 / 手工店的网站插件（上传图秒出料单）'}
+];
+(function(){
+  var box=document.getElementById('flips');
+  FLIPS.forEach(function(f){
+    var el=document.createElement('div');el.className='flip';
+    el.innerHTML='<div class="side assume"><small>默认假设</small>'+f.a+'</div><div class="arrow">⟳</div><div class="side rev"><small>反转后</small>'+f.r+'</div>';
+    box.appendChild(el);
+  });
+})();
+
+/* ---- 机会区 ---- */
+var OPPS=[
+ {n:'1',g:'#ff6fae,#6c5ce7',t:'库存驱动设计',p:'我有哪些颜色的珠子 → 算出能做的图案。反转"先有图"的默认，把库存清单变成设计起点。',why:'直接复用 CIEDE2000：在受限色板内找最优近似匹配，正是其核心能力的杀手级应用。'},
+ {n:'2',g:'#2fb3b3,#3a86ff',t:'实拍数字化 + 摆放纠错',p:'拍下随手摆的或半成品拼豆板，反向识别成可编辑图纸；摆放途中拍照检测摆错的格子。',why:'反转"屏幕优先 / 导出即结束"，把工具延伸到实物世界，色彩比对全靠 CIEDE2000。'},
+ {n:'3',g:'#f5872a,#f7c948',t:'极简低难度风格化',p:'不追求最还原，而是主动风格化——最少颜色、最低难度，照样好看的极简珠图生成器。',why:'反转"越还原越好",降低新手与儿童门槛，差异化于一众"高保真转换"工具。'}
+];
+(function(){
+  var box=document.getElementById('opps');
+  OPPS.forEach(function(o){
+    var el=document.createElement('div');el.className='opp';
+    el.innerHTML=
+      '<div class="crown" style="background:linear-gradient(135deg,'+o.g+')">'+
+        '<span class="n">'+o.n+'</span><h3>'+o.t+'</h3></div>'+
+      '<div class="body"><p>'+o.p+'</p><div class="why">⚙ 为何贴合：'+o.why+'</div></div>';
+    box.appendChild(el);
+  });
+})();
+
+/* ---- 三层版图 ---- */
+var LAYERS=[
+ {lv:'L1',c:'#9bd64a',b:'桌面级基线',s:'导入 / 转换 / 编辑 / 物料 / 导出 —— pindou 已覆盖大部分'},
+ {lv:'L2',c:'#3a86ff',b:'生态层',s:'社区 / 图纸市场 / 搭建跟随 —— 规模化护城河'},
+ {lv:'L3',c:'#ff6fae',b:'差异化突破层',s:'库存驱动 / 实物优先 / 多媒介换算 / 极简风格化 / AR 纠错 —— 以小博大的机会区'}
+];
+(function(){
+  var box=document.getElementById('layers');
+  LAYERS.forEach(function(l){
+    var el=document.createElement('div');el.className='layer';
+    el.innerHTML='<span class="lv" style="background:'+l.c+'">'+l.lv+'</span><div><b>'+l.b+'</b><br><span>'+l.s+'</span></div>';
+    box.appendChild(el);
+  });
+})();
+
+/* ---- 洞察带 ---- */
+var INS=[
+ ['💡','功能可按 8 个用户 Job 分层：获取 → 转换 → 编辑 → 组织 → 物料 → 导出 → 搭建跟随 → 社区。'],
+ ['🧩','组合空白最肥的区：多媒介换算 × 特殊几何 × AI 优化可摆性——市面多数工具只覆盖方形格 + 单一拼豆 + 自动匹配。'],
+ ['🔄','三个最差异化方向均反转了"先有图、追求还原、屏幕优先"三大默认假设。'],
+ ['✅','决策：pindou-studio 最值得切入库存驱动设计、实拍数字化 + 摆放纠错、极简低难度风格化——皆贴合其 CIEDE2000 色彩匹配核心。']
+];
+(function(){
+  var box=document.getElementById('insights');
+  box.innerHTML='<h3>// INSIGHTS &amp; DECISION</h3>';
+  INS.forEach(function(i){
+    var el=document.createElement('div');el.className='ins';
+    el.innerHTML='<span>'+i[0]+'</span><span>'+i[1]+'</span>';
+    box.appendChild(el);
+  });
+})();
+
+/* ---- 页脚珠条 ---- */
+(function(){
+  var s=document.getElementById('footstrip');
+  for(var i=0;i<11;i++){var d=document.createElement('i');d.style.background=BC[i];s.appendChild(d);}
+})();
+</script>
+</body>
+</html>

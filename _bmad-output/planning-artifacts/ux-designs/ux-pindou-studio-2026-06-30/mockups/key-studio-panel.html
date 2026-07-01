@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio 库存面板 — 库存驱动设计</title>
+<style>
+/* =====================================================================
+   屏 2 / 3 — Studio 编辑器（库存模式开启）
+   对应 EXPERIENCE.md：
+   · Information Architecture — Studio 新增：库存面板、库存模式开关、三态灯、缺色标记
+   · Component Patterns — 库存模式开关（VSwitch）/ 三态灯（VChip+色+图标+一句人话，点击展开缺口清单）
+   · Component Patterns — 缺色格标记（画布缺色格暖橙描边+斜纹）/ 缺口清单（色块+色号+人话解读，缺色行带"用库存替代"）
+   · State Patterns — 库存模式开启·有缺色（黄灯）；库存模式开启·全可拼（绿灯，右侧对照）
+   · Accessibility Floor — 三态灯不只靠红黄绿，配独立 mdi 图标 + 文字标签；缺色双编码（暖橙+斜纹+图标）
+   · Key Flows — KF-1 步②③ / KF-2 路径（三态灯直接给判定 → 展开缺口清单人话解读）
+   实现 PRD：FR-4 / FR-6 / FR-7 入口 / FR-10 / FR-11
+   视觉令牌全部来自现有 Vuetify light 主题（DESIGN.md frontmatter）。纯内联 CSS，离线。
+   ===================================================================== */
+:root{
+  --bg:#F7F4EF; --surface:#FFFFFF; --surface-variant:#EFEAE3;
+  --primary:#C8456B; --secondary:#15A08C; --accent:#F2A03D;
+  --success:#15A08C; --warning:#E0A100; --error:#D14343;
+  --on-surface:#2C2A33; --on-surface-variant:#5A5660;
+  --r-card:16px; --r-btn:10px; --r-chip:9px;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:#e7e2da;padding:28px;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  color:var(--on-surface);}
+.browser{max-width:1180px;margin:0 auto;border-radius:14px;overflow:hidden;
+  box-shadow:0 18px 50px rgba(44,42,51,.20);background:var(--surface);}
+.chrome{background:#e3ddd4;display:flex;align-items:center;gap:8px;padding:11px 16px;}
+.dot{width:12px;height:12px;border-radius:50%;}
+.dot.r{background:#ec6a5e;}.dot.y{background:#f4bf4f;}.dot.g{background:#61c554;}
+.addr{flex:1;margin-left:14px;background:#fff;border-radius:8px;padding:6px 14px;
+  font-size:13px;color:var(--on-surface-variant);}
+.viewport{background:var(--bg);padding:22px;display:flex;gap:20px;align-items:flex-start;}
+
+/* ---- 主区：画布缩略 ---- */
+.canvas-area{flex:1;min-width:0;}
+.canvas-head{font-size:13px;color:var(--on-surface-variant);margin:2px 4px 12px;
+  display:flex;justify-content:space-between;}
+.canvas-card{background:var(--surface);border-radius:var(--r-card);padding:18px;
+  box-shadow:0 2px 10px rgba(44,42,51,.06);}
+.beadgrid{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;}
+.bead{aspect-ratio:1;border-radius:50%;box-shadow:inset 0 -2px 3px rgba(0,0,0,.14),inset 0 2px 2px rgba(255,255,255,.30);}
+/* 缺色格：暖橙描边 + 斜纹纹理 + 角标，区别于正常格（双编码，色盲可辨） */
+.bead.missing{
+  background-image:repeating-linear-gradient(45deg,
+    rgba(242,160,61,.95) 0, rgba(242,160,61,.95) 3px,
+    rgba(255,255,255,.55) 3px, rgba(255,255,255,.55) 6px);
+  box-shadow:inset 0 0 0 2.5px var(--accent);position:relative;}
+.legend{display:flex;gap:18px;margin-top:16px;font-size:12px;color:var(--on-surface-variant);align-items:center;}
+.legend .sw{width:16px;height:16px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:6px;}
+.legend .sw.miss{background-image:repeating-linear-gradient(45deg,
+  rgba(242,160,61,.95) 0,rgba(242,160,61,.95) 2px,rgba(255,255,255,.6) 2px,rgba(255,255,255,.6) 4px);
+  box-shadow:inset 0 0 0 2px var(--accent);}
+
+/* ---- 右侧库存面板 ---- */
+.panel{width:344px;flex:0 0 auto;display:flex;flex-direction:column;gap:14px;}
+.card{background:var(--surface);border-radius:var(--r-card);padding:16px 17px;
+  box-shadow:0 2px 10px rgba(44,42,51,.06);}
+.panel-title{font-size:15px;font-weight:700;margin:0 0 2px;}
+/* 库存模式开关 */
+.switch-row{display:flex;align-items:center;justify-content:space-between;}
+.switch-lbl{font-size:14px;font-weight:600;}
+.switch-sub{font-size:11.5px;color:var(--on-surface-variant);margin-top:2px;}
+.vswitch{width:46px;height:26px;border-radius:13px;background:var(--secondary);
+  position:relative;flex:0 0 auto;box-shadow:inset 0 1px 3px rgba(0,0,0,.2);}
+.vswitch::after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;
+  border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+
+/* 三态灯 chip */
+.lamp{display:inline-flex;align-items:center;gap:9px;padding:10px 14px;border-radius:var(--r-chip);
+  font-weight:600;font-size:13.5px;width:100%;}
+.lamp.warn{background:rgba(224,161,0,.14);color:#8a6400;}
+.lamp.ok{background:rgba(21,160,140,.14);color:#0c6457;}
+.lamp .ico{width:22px;height:22px;border-radius:50%;flex:0 0 auto;display:flex;
+  align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;}
+.lamp.warn .ico{background:var(--warning);}
+.lamp.ok .ico{background:var(--success);}
+.lamp-txt{line-height:1.3;}
+
+/* 缺口清单 */
+.shortfall{margin-top:6px;display:flex;flex-direction:column;gap:8px;}
+.sf-row{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:11px;
+  background:var(--surface-variant);}
+.sf-sw{width:24px;height:24px;border-radius:7px;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);}
+.sf-meta{flex:1;min-width:0;}
+.sf-code{font-size:13.5px;font-weight:700;letter-spacing:.3px;}
+.sf-read{font-size:11.5px;color:var(--on-surface-variant);margin-top:1px;}
+.sf-read.tight{color:#8a6400;font-weight:600;}
+.tag-miss{font-size:10.5px;font-weight:700;color:#8a6400;background:rgba(242,160,61,.22);
+  padding:2px 7px;border-radius:6px;flex:0 0 auto;}
+
+/* 主按钮 用库存替代 */
+.btn-primary{margin-top:14px;width:100%;padding:13px;border:none;border-radius:var(--r-btn);
+  background:var(--primary);color:#fff;font-size:14.5px;font-weight:600;letter-spacing:.4px;
+  cursor:pointer;box-shadow:0 5px 14px rgba(200,69,107,.32);
+  display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-ico{font-weight:800;}
+
+/* 对照标签 */
+.compare-tag{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--on-surface-variant);
+  text-transform:uppercase;margin:0 0 8px;}
+.divider{height:1px;background:#e2dcd2;margin:4px 0;}
+
+.caption{margin:22px auto 0;max-width:1180px;color:#6b665e;font-size:12.5px;
+  text-align:center;line-height:1.5;}
+.panel-stack{display:flex;flex-direction:column;gap:14px;}
+</style>
+</head>
+<body>
+<div class="browser">
+  <div class="chrome">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <div class="addr">pindou.studio/studio</div>
+  </div>
+  <div class="viewport">
+
+    <!-- 主区：画布缩略（含缺色格） -->
+    <div class="canvas-area">
+      <div class="canvas-head">
+        <span>初音未来 · 48 × 58</span>
+        <span>库存模式：开</span>
+      </div>
+      <div class="canvas-card">
+        <div class="beadgrid">
+          <!-- 简化初音头像色块；.missing = 缺色格（暖橙斜纹+描边，双编码） -->
+          <div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead missing"></div><div class="bead missing"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div>
+          <div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div>
+          <div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div>
+          <div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4A6C0"></div><div class="bead" style="background:#F4A6C0"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#202020"></div><div class="bead missing"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div>
+          <div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4A6C0"></div><div class="bead" style="background:#FCD514"></div><div class="bead" style="background:#FCD514"></div><div class="bead" style="background:#F4A6C0"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div>
+          <div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4A6C0"></div><div class="bead" style="background:#F4A6C0"></div><div class="bead" style="background:#F4A6C0"></div><div class="bead" style="background:#F4A6C0"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div>
+          <div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#F4F4F1"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div>
+          <div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#2BB6AE"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#2BB6AE"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div>
+          <div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#2BB6AE"></div><div class="bead" style="background:#2BB6AE"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#202020"></div><div class="bead" style="background:#2BB6AE"></div><div class="bead" style="background:#2BB6AE"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div>
+          <div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead missing"></div><div class="bead" style="background:#2BB6AE"></div><div class="bead" style="background:#8C9091"></div><div class="bead" style="background:#8C9091"></div><div class="bead" style="background:#8C9091"></div><div class="bead" style="background:#2BB6AE"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div><div class="bead" style="background:#7EC8E3"></div>
+        </div>
+        <div class="legend">
+          <span><span class="sw" style="background:#7EC8E3;"></span>正常格</span>
+          <span><span class="sw miss"></span>缺色格（你库存里没有的色）</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧：黄灯（主）+ 绿灯（对照） 两个面板并排堆叠 -->
+    <div class="panel">
+
+      <!-- 库存模式开关 -->
+      <div class="card">
+        <div class="switch-row">
+          <div>
+            <div class="switch-lbl">库存模式</div>
+            <div class="switch-sub">用你手头的色来铺这张图</div>
+          </div>
+          <div class="vswitch"></div>
+        </div>
+      </div>
+
+      <!-- 黄灯状态：有缺色 -->
+      <div class="card">
+        <div class="lamp warn">
+          <span class="ico">&#8644;</span>
+          <span class="lamp-txt">缺 3 个色——可以用你手头的色替代</span>
+        </div>
+
+        <div class="shortfall">
+          <div class="sf-row">
+            <div class="sf-sw" style="background:#1C3F94;"></div>
+            <div class="sf-meta">
+              <div class="sf-code">P13 · Dark Blue</div>
+              <div class="sf-read">这张图里有，但你库存里没有</div>
+            </div>
+            <span class="tag-miss">缺色</span>
+          </div>
+
+          <div class="sf-row">
+            <div class="sf-sw" style="background:#6E4524;"></div>
+            <div class="sf-meta">
+              <div class="sf-code">P24 · Brown</div>
+              <div class="sf-read">这张图里有，但你库存里没有</div>
+            </div>
+            <span class="tag-miss">缺色</span>
+          </div>
+
+          <div class="sf-row">
+            <div class="sf-sw" style="background:#F6C9A6;"></div>
+            <div class="sf-meta">
+              <div class="sf-code">P29 · Peach</div>
+              <div class="sf-read">这张图里有，但你库存里没有</div>
+            </div>
+            <span class="tag-miss">缺色</span>
+          </div>
+
+          <div class="sf-row">
+            <div class="sf-sw" style="background:#7EC8E3;"></div>
+            <div class="sf-meta">
+              <div class="sf-code">P15 · Light Blue</div>
+              <div class="sf-read tight">够铺这张图，余量紧张</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-primary"><span class="btn-ico">&#8644;</span>用库存替代</button>
+      </div>
+
+      <!-- 绿灯状态（对照） -->
+      <div class="card">
+        <p class="compare-tag">对照 · 替代之后</p>
+        <div class="divider"></div>
+        <div class="lamp ok" style="margin-top:10px;">
+          <span class="ico">&#10003;</span>
+          <span class="lamp-txt">全部可用你现有库存完成 &#10003;</span>
+        </div>
+        <p class="switch-sub" style="margin-top:10px;">画布上没有缺色标记了，今晚就能开摆。</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+<p class="caption">屏 2/3 · Studio 库存面板（库存模式·有缺色）：缺色格暖橙斜纹标记、黄灯三态灯 + 缺口清单人话解读 + "用库存替代"主按钮；右下绿灯做替代后对照。</p>
+</body>
+</html>

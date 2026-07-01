@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory 录入页 — 库存驱动设计</title>
+<style>
+/* =====================================================================
+   屏 1 / 3 — Inventory 录入页（按品牌色板勾选 + 填数量）
+   对应 EXPERIENCE.md：
+   · Information Architecture — Inventory（新）顶级视图 / 品牌色板切换
+   · Component Patterns — 库存条目行（勾选切换"是否拥有"，勾选后数量字段激活）
+   · Component Patterns — 批量操作条（全选/全不选、给已勾选项设统一默认数量）
+   · State Patterns — 录入数量非法（即时内联校验：非整数/负数标红 + 一句提示）
+   · Voice and Tone — 说人话、不甩账本
+   实现 PRD：FR-1 / FR-2 / FR-3
+   视觉令牌全部来自现有 Vuetify light 主题（DESIGN.md frontmatter）。
+   纯内联 CSS，无 JS、无网络，完全离线渲染。
+   ===================================================================== */
+:root{
+  --bg:#F7F4EF; --surface:#FFFFFF; --surface-variant:#EFEAE3;
+  --primary:#C8456B; --secondary:#15A08C; --accent:#F2A03D;
+  --success:#15A08C; --warning:#E0A100; --error:#D14343;
+  --on-surface:#2C2A33; --on-surface-variant:#5A5660;
+  --r-card:16px; --r-btn:10px; --r-chip:9px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:#e7e2da;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  color:var(--on-surface); padding:28px;
+}
+/* ---- 浏览器框 ---- */
+.browser{max-width:1080px;margin:0 auto;border-radius:14px;overflow:hidden;
+  box-shadow:0 18px 50px rgba(44,42,51,.20);background:var(--surface);}
+.chrome{background:#e3ddd4;display:flex;align-items:center;gap:8px;padding:11px 16px;}
+.dot{width:12px;height:12px;border-radius:50%;}
+.dot.r{background:#ec6a5e;}.dot.y{background:#f4bf4f;}.dot.g{background:#61c554;}
+.addr{flex:1;margin-left:14px;background:#fff;border-radius:8px;padding:6px 14px;
+  font-size:13px;color:var(--on-surface-variant);}
+.viewport{background:var(--bg);padding:26px 30px 34px;}
+
+/* ---- 页头 ---- */
+.page-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px;}
+h1{font-size:23px;margin:0;font-weight:700;letter-spacing:.2px;}
+.subtitle{color:var(--on-surface-variant);font-size:13.5px;margin:2px 0 20px;}
+
+/* ---- 品牌色板切换 ---- */
+.brand-tabs{display:flex;gap:10px;margin-bottom:18px;}
+.brand-tab{padding:9px 20px;border-radius:var(--r-btn);background:var(--surface);
+  border:1.5px solid var(--surface-variant);font-size:14px;font-weight:600;
+  letter-spacing:.3px;color:var(--on-surface-variant);cursor:pointer;}
+.brand-tab.active{background:var(--primary);border-color:var(--primary);color:#fff;
+  box-shadow:0 4px 12px rgba(200,69,107,.30);}
+
+/* ---- 批量操作条 ---- */
+.bulkbar{background:var(--surface-variant);border-radius:var(--r-card);
+  padding:14px 18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  margin-bottom:18px;}
+.bulk-group{display:flex;align-items:center;gap:8px;}
+.linkbtn{font-size:13.5px;font-weight:600;color:var(--primary);cursor:pointer;
+  background:none;border:none;letter-spacing:.2px;padding:4px 2px;}
+.bulk-sep{width:1px;height:22px;background:#d8d1c6;}
+.bulk-label{font-size:13.5px;color:var(--on-surface);}
+.bulk-input{width:84px;padding:7px 10px;border-radius:var(--r-btn);
+  border:1.5px solid #d8d1c6;background:#fff;font-size:14px;font-weight:600;
+  color:var(--on-surface);text-align:center;}
+.bulk-apply{padding:7px 16px;border-radius:var(--r-btn);border:none;
+  background:var(--secondary);color:#fff;font-size:13.5px;font-weight:600;
+  letter-spacing:.3px;cursor:pointer;}
+.bulk-hint{margin-left:auto;font-size:12.5px;color:var(--on-surface-variant);}
+
+/* ---- 色卡网格 ---- */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 22px;}
+.row{display:flex;align-items:center;gap:13px;background:var(--surface);
+  border:1.5px solid var(--surface-variant);border-radius:var(--r-card);
+  padding:11px 15px;}
+.row.off{background:#fbf9f5;border-color:#efe9e1;}
+.cb{width:20px;height:20px;border-radius:6px;border:2px solid #c4bcb0;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;background:#fff;}
+.cb.on{background:var(--primary);border-color:var(--primary);}
+.cb.on::after{content:"";width:5px;height:10px;border:solid #fff;border-width:0 2.5px 2.5px 0;
+  transform:rotate(43deg);margin-top:-2px;}
+.swatch{width:30px;height:30px;border-radius:8px;flex:0 0 auto;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);}
+.swatch.dim{opacity:.42;}
+.meta{flex:1;min-width:0;}
+.code{font-size:14.5px;font-weight:700;letter-spacing:.4px;}
+.name{font-size:12px;color:var(--on-surface-variant);margin-top:1px;}
+.off .code,.off .name{color:#a9a39a;}
+.qty{width:78px;padding:8px 10px;border-radius:var(--r-btn);text-align:center;
+  font-size:14px;font-weight:600;color:var(--on-surface);
+  border:1.5px solid #d8d1c6;background:#fff;flex:0 0 auto;}
+.qty.dis{background:#f0ece5;border-color:#e7e1d7;color:#bdb6ab;}
+.qty.err{border-color:var(--error);color:var(--error);background:#fdf3f3;}
+.qty-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:0 0 auto;}
+.qty-err-msg{font-size:11px;color:var(--error);display:flex;align-items:center;gap:3px;
+  font-weight:600;}
+.warn-ico{display:inline-block;width:12px;height:12px;border-radius:50%;
+  background:var(--error);color:#fff;font-size:9px;font-weight:700;text-align:center;
+  line-height:12px;}
+.caption{margin:22px auto 0;max-width:1080px;color:#6b665e;font-size:12.5px;
+  text-align:center;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="browser">
+  <div class="chrome">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <div class="addr">pindou.studio/inventory</div>
+  </div>
+  <div class="viewport">
+
+    <div class="page-head">
+      <h1>我的库存</h1>
+    </div>
+    <p class="subtitle">勾上你手头有的色，填个大概数量就行——不用数到颗。一个品牌色板一套库存。</p>
+
+    <!-- 品牌色板切换 -->
+    <div class="brand-tabs">
+      <button class="brand-tab active">Perler</button>
+      <button class="brand-tab">Hama</button>
+      <button class="brand-tab">Artkal</button>
+    </div>
+
+    <!-- 批量操作条 -->
+    <div class="bulkbar">
+      <div class="bulk-group">
+        <button class="linkbtn">全选本色板</button>
+        <span class="bulk-sep"></span>
+        <button class="linkbtn">全不选</button>
+      </div>
+      <span class="bulk-sep"></span>
+      <div class="bulk-group">
+        <span class="bulk-label">给已勾选的色统一设</span>
+        <input class="bulk-input" value="1000">
+        <span class="bulk-label">颗</span>
+        <button class="bulk-apply">应用</button>
+      </div>
+      <span class="bulk-hint">设完再个别微调，省得一个个填</span>
+    </div>
+
+    <!-- 色卡网格 -->
+    <div class="grid">
+
+      <!-- 已勾选 -->
+      <div class="row">
+        <div class="cb on"></div>
+        <div class="swatch" style="background:#202020;"></div>
+        <div class="meta"><div class="code">P27</div><div class="name">Black 黑</div></div>
+        <div class="qty-wrap"><input class="qty" value="2000"></div>
+      </div>
+
+      <div class="row">
+        <div class="cb on"></div>
+        <div class="swatch" style="background:#F4F4F1;"></div>
+        <div class="meta"><div class="code">P01</div><div class="name">White 白</div></div>
+        <div class="qty-wrap"><input class="qty" value="1500"></div>
+      </div>
+
+      <div class="row">
+        <div class="cb on"></div>
+        <div class="swatch" style="background:#7EC8E3;"></div>
+        <div class="meta"><div class="code">P15</div><div class="name">Light Blue 浅蓝</div></div>
+        <div class="qty-wrap"><input class="qty" value="1000"></div>
+      </div>
+
+      <!-- 已勾选但数量非法 → 即时校验标红 -->
+      <div class="row">
+        <div class="cb on"></div>
+        <div class="swatch" style="background:#2BB6AE;"></div>
+        <div class="meta"><div class="code">P17</div><div class="name">Turquoise 蓝绿</div></div>
+        <div class="qty-wrap">
+          <input class="qty err" value="-50">
+          <div class="qty-err-msg"><span class="warn-ico">!</span>填个 0 以上的整数就行</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="cb on"></div>
+        <div class="swatch" style="background:#F4A6C0;"></div>
+        <div class="meta"><div class="code">P08</div><div class="name">Pink 粉</div></div>
+        <div class="qty-wrap"><input class="qty" value="800"></div>
+      </div>
+
+      <div class="row">
+        <div class="cb on"></div>
+        <div class="swatch" style="background:#FCD514;"></div>
+        <div class="meta"><div class="code">P03</div><div class="name">Yellow 黄</div></div>
+        <div class="qty-wrap"><input class="qty" value="1000"></div>
+      </div>
+
+      <!-- 未勾选 → 数量字段灰置 -->
+      <div class="row off">
+        <div class="cb"></div>
+        <div class="swatch dim" style="background:#1C3F94;"></div>
+        <div class="meta"><div class="code">P13</div><div class="name">Dark Blue 深蓝</div></div>
+        <div class="qty-wrap"><input class="qty dis" value="" placeholder="—" disabled></div>
+      </div>
+
+      <div class="row off">
+        <div class="cb"></div>
+        <div class="swatch dim" style="background:#E2241A;"></div>
+        <div class="meta"><div class="code">P06</div><div class="name">Red 红</div></div>
+        <div class="qty-wrap"><input class="qty dis" value="" placeholder="—" disabled></div>
+      </div>
+
+      <div class="row">
+        <div class="cb on"></div>
+        <div class="swatch" style="background:#3AA63F;"></div>
+        <div class="meta"><div class="code">P19</div><div class="name">Green 绿</div></div>
+        <div class="qty-wrap"><input class="qty" value="600"></div>
+      </div>
+
+      <div class="row off">
+        <div class="cb"></div>
+        <div class="swatch dim" style="background:#6E4524;"></div>
+        <div class="meta"><div class="code">P24</div><div class="name">Brown 棕</div></div>
+        <div class="qty-wrap"><input class="qty dis" value="" placeholder="—" disabled></div>
+      </div>
+
+      <div class="row">
+        <div class="cb on"></div>
+        <div class="swatch" style="background:#8C9091;"></div>
+        <div class="meta"><div class="code">P25</div><div class="name">Gray 灰</div></div>
+        <div class="qty-wrap"><input class="qty" value="400"></div>
+      </div>
+
+      <div class="row off">
+        <div class="cb"></div>
+        <div class="swatch dim" style="background:#F6C9A6;"></div>
+        <div class="meta"><div class="code">P29</div><div class="name">Peach 肤色</div></div>
+        <div class="qty-wrap"><input class="qty dis" value="" placeholder="—" disabled></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<p class="caption">屏 1/3 · Inventory 录入页：勾选切换"是否拥有"、勾选后数量激活、未勾选灰置、批量设默认数量、非法数量即时标红。</p>
+</body>
+</html>
